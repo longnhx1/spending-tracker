@@ -21,16 +21,12 @@
 
 ## 📱 Screenshots
 
-## 📱 Screenshots
-
-| Home | Thêm giao dịch | Thống kê | Nợ |
-|------|---------------|----------|-----|
-| ![home](screenshots/home.png) | ![add](screenshots/add.png) | ![stats](screenshots/stats.png) | ![debt](screenshots/debt.png) |
-<img width="642" height="1389" alt="IMG_0248" src="https://github.com/user-attachments/assets/2f402dc5-bf36-45f0-b4b4-ba2cba1d4a10" />
-<img width="642" height="1389" alt="IMG_0249" src="https://github.com/user-attachments/assets/76d9aaba-5306-4faf-85d4-bd49e34abf7b" />
-<img width="642" height="1389" alt="IMG_0250" src="https://github.com/user-attachments/assets/50117345-9394-4923-8bf9-9ce2108c12ad" />
-<img width="642" height="1389" alt="IMG_0251" src="https://github.com/user-attachments/assets/d6442223-64b9-4653-b893-d1db5b6c866b" />
-
+<div align="center">
+  <img width="200" alt="Home" src="https://github.com/user-attachments/assets/2f402dc5-bf36-45f0-b4b4-ba2cba1d4a10" />
+  <img width="200" alt="Add" src="https://github.com/user-attachments/assets/76d9aaba-5306-4faf-85d4-bd49e34abf7b" />
+  <img width="200" alt="Stats" src="https://github.com/user-attachments/assets/50117345-9394-4923-8bf9-9ce2108c12ad" />
+  <img width="200" alt="Debt" src="https://github.com/user-attachments/assets/d6442223-64b9-4653-b893-d1db5b6c866b" />
+</div>
 ```
 
 ## 🚀 Cài đặt
