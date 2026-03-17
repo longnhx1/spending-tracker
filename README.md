@@ -21,7 +21,18 @@
 
 ## 📱 Screenshots
 
-_(Thêm ảnh chụp màn hình app vào đây)_
+| Home | Thêm giao dịch | Thống kê | Nợ |
+|------|---------------|----------|-----|
+| ![home](screenshots/home.png) | ![add](screenshots/add.png) | ![stats](screenshots/stats.png) | ![debt](screenshots/debt.png) |
+```
+
+---
+
+## 2 — Thêm topics cho repo
+
+Vào repo GitHub → bấm ⚙️ cạnh **"About"** → thêm topics:
+```
+react-native, expo, javascript, sqlite, zustand, personal-finance, mobile-app, gemini-ai
 
 ## 🚀 Cài đặt
 
