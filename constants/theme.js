@@ -22,6 +22,12 @@ export const DARK = {
   text3: '#4A6380',
   border: 'rgba(0,168,255,0.12)',
   border2: 'rgba(0,168,255,0.22)',
+
+  // UI extras
+  glassPill: "rgba(255,255,255,0.07)",
+  accentGlass: "rgba(0,168,255,0.08)",
+  modalOverlay: "rgba(0,0,0,0.7)",
+  amber: "#FFB547",
 };
 
 export const LIGHT = {
@@ -45,6 +51,12 @@ export const LIGHT = {
   text3: '#8DA4BE',
   border: 'rgba(0,133,204,0.14)',
   border2: 'rgba(0,133,204,0.28)',
+
+  // UI extras
+  glassPill: "rgba(255,255,255,0.07)",
+  accentGlass: "rgba(0,133,204,0.08)",
+  modalOverlay: "rgba(0,0,0,0.7)",
+  amber: "#FFB547",
 };
 
 // Alias tiện dùng — component cũ có thể import `COLORS`

@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native";
+import { DARK } from "../constants/theme";
 const makeStyles = (colors) =>
   StyleSheet.create({
     safe: { flex: 1, backgroundColor: colors.bg0 },
@@ -7,14 +8,14 @@ const makeStyles = (colors) =>
     subtitle: { fontSize: 11, color: colors.silver, opacity: 0.5, marginTop: 2 },
     overviewCard: {
       margin: 20,
-      backgroundColor: colors.bg2,
+      backgroundColor: DARK.bg2,
       borderWidth: 1,
-      borderColor: colors.border2,
+      borderColor: DARK.border2,
       borderRadius: 22,
       padding: 20,
     },
     overviewLabel: { fontSize: 9, color: colors.silver, opacity: 0.5, letterSpacing: 2.5 },
-    overviewAmount: { fontSize: 30, color: colors.textPrimary, fontWeight: "300", marginTop: 6, letterSpacing: -1 },
+    overviewAmount: { fontSize: 32, color: colors.textPrimary, fontWeight: "800", marginTop: 6, letterSpacing: -1.5 },
     overviewRow: { flexDirection: "row", justifyContent: "space-between", marginTop: 14, marginBottom: 12 },
     overviewSub: { fontSize: 9, color: colors.silver, opacity: 0.4, letterSpacing: 1 },
     overviewVal: { fontSize: 14, color: colors.textPrimary, fontWeight: "500", marginTop: 3 },
@@ -62,8 +63,8 @@ const makeStyles = (colors) =>
       paddingBottom: 28,
       paddingHorizontal: 8,
       backgroundColor: colors.bg1,
-      borderTopWidth: 1,
-      borderTopColor: colors.border2,
+      borderTopWidth: 0.5,
+      borderTopColor: colors.border,
     },
     navItem: { alignItems: "center", gap: 3 },
     navIcon: { fontSize: 20, opacity: 0.3 },
@@ -72,6 +73,25 @@ const makeStyles = (colors) =>
     navDotActive: { opacity: 1 },
     navLabel: { fontSize: 8, color: colors.silver, opacity: 0.3, letterSpacing: 1, textTransform: "uppercase" },
     navLabelActive: { color: colors.accent, opacity: 1 },
+
+    navPlusBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 2,
+    },
+    navPlusBtnInactive: { opacity: 0.6 },
+    navPlusLabel: {
+      fontSize: 8,
+      fontWeight: "700",
+      color: colors.accent,
+      marginTop: 2,
+      opacity: 1,
+    },
+    navPlusLabelInactive: { opacity: 0.6 },
   });
 
 export default makeStyles;

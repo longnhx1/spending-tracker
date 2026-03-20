@@ -16,11 +16,6 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import useStore from "../store/useStore";
 import makeAddStyles from "../styles/addStyles";
 
-const formatMoney = (amount) => {
-  const n = Number.isFinite(amount) ? amount : 0;
-  return Math.abs(n).toLocaleString("vi-VN");
-};
-
 const pad2 = (n) => String(n).padStart(2, "0");
 const todayISO = () => {
   const d = new Date();
@@ -313,6 +308,75 @@ export default function AddScreen() {
 
         <View style={{ height: 24 }} />
       </ScrollView>
+
+      {/* Bottom Nav */}
+      <View style={styles.bottomNav}>
+        {(() => {
+          const activeRoute = "/add";
+          const NAV_ITEMS = [
+            { icon: "🏠", label: "Trang chủ", route: "/" },
+            { icon: "📊", label: "Thống kê", route: "/stats" },
+            { isPlus: true },
+            { icon: "💳", label: "Nợ", route: "/debt" },
+            { icon: "🎯", label: "Ngân sách", route: "/budget" },
+          ];
+
+          return NAV_ITEMS.map((item) => {
+            if (item.isPlus) {
+              const isPlusActive = activeRoute === "/add";
+              return (
+                <TouchableOpacity
+                  key="plus"
+                  style={styles.navItem}
+                  onPress={() => {
+                    if (isPlusActive) return;
+                    router.push("/add");
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.navPlusBtn,
+                      !isPlusActive && styles.navPlusBtnInactive,
+                    ]}
+                  >
+                    <Text style={[styles.navPlusLabel, { marginTop: 0 }]}>
+                      +
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.navPlusLabel,
+                      !isPlusActive && styles.navPlusLabelInactive,
+                    ]}
+                  >
+                    Thêm
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
+
+            const isActive = item.route === activeRoute;
+            return (
+              <TouchableOpacity
+                key={item.label}
+                style={styles.navItem}
+                onPress={() => {
+                  if (isActive) return;
+                  router.push(item.route);
+                }}
+              >
+                <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
+                  {item.icon}
+                </Text>
+                <View style={[styles.navDot, isActive && styles.navDotActive]} />
+                <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          });
+        })()}
+      </View>
     </SafeAreaView>
   );
 }

@@ -1,4 +1,5 @@
 import { StyleSheet } from "react-native";
+import { DARK } from "../constants/theme";
 
 const makeStyles = (colors) =>
   StyleSheet.create({
@@ -58,9 +59,9 @@ const makeStyles = (colors) =>
     balanceCard: {
       marginHorizontal: 20,
       marginBottom: 20,
-      backgroundColor: colors.bg2,
+      backgroundColor: DARK.bg2, // Always dark like hero card
       borderWidth: 1,
-      borderColor: colors.border2,
+      borderColor: DARK.border2,
       borderRadius: 18,
       padding: 18,
     },
@@ -71,10 +72,10 @@ const makeStyles = (colors) =>
       letterSpacing: 2.5,
     },
     balanceAmount: {
-      fontSize: 32,
-      fontWeight: "300",
+      fontSize: 34,
+      fontWeight: "800",
       marginTop: 6,
-      letterSpacing: -1,
+      letterSpacing: -1.5,
     },
     balanceSub: {
       fontSize: 11,
@@ -217,8 +218,8 @@ const makeStyles = (colors) =>
       paddingBottom: 28,
       paddingHorizontal: 8,
       backgroundColor: colors.bg1,
-      borderTopWidth: 1,
-      borderTopColor: colors.border2,
+      borderTopWidth: 0.5,
+      borderTopColor: colors.border,
     },
     navItem: { alignItems: "center", gap: 3 },
     navIcon: { fontSize: 20, opacity: 0.3 },
@@ -227,6 +228,25 @@ const makeStyles = (colors) =>
     navDotActive: { opacity: 1 },
     navLabel: { fontSize: 8, color: colors.silver, opacity: 0.3, letterSpacing: 1, textTransform: "uppercase" },
     navLabelActive: { color: colors.accent, opacity: 1 },
+
+    navPlusBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 2,
+    },
+    navPlusBtnInactive: { opacity: 0.6 },
+    navPlusLabel: {
+      fontSize: 8,
+      fontWeight: "700",
+      color: colors.accent,
+      marginTop: 2,
+      opacity: 1,
+    },
+    navPlusLabelInactive: { opacity: 0.6 },
   });
 
 export default makeStyles;

@@ -17,15 +17,9 @@ import useStore from "../store/useStore";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import makeStatsStyles from "../styles/statsStyles";
+import { formatMoney } from "../utils/formatMoney";
 
-const formatMoney = (amount) => Math.abs(amount).toLocaleString("vi-VN");
 const pad2 = (n) => String(n).padStart(2, "0");
-const formatCompactVnd = (value) => {
-  const n = Math.abs(Number(value) || 0);
-  if (n >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`;
-  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
-  return `${Math.round(n)}`;
-};
 
 export default function StatsScreen() {
   const router = useRouter();
@@ -67,12 +61,13 @@ export default function StatsScreen() {
   const balance = income - expense;
 
   // Tính chi tiêu theo danh mục
-  const byCategory = categories.map((cat) => {
-    const total = monthTx
-      .filter((tx) => tx.type === "expense" && tx.category === cat.id)
-      .reduce((sum, tx) => sum + tx.amount, 0);
-    return { ...cat, total };
-  })
+  const byCategory = categories
+    .map((cat) => {
+      const total = monthTx
+        .filter((tx) => tx.type === "expense" && tx.category === cat.id)
+        .reduce((sum, tx) => sum + tx.amount, 0);
+      return { ...cat, total };
+    })
     .filter((cat) => cat.total > 0)
     .sort((a, b) => b.total - a.total);
 
@@ -90,7 +85,9 @@ export default function StatsScreen() {
     const startISO = `${currentMonth}-${pad2(startDay)}`;
     const endISO = `${currentMonth}-${pad2(endDay)}`;
 
-    const weekTx = monthTx.filter((tx) => tx.date >= startISO && tx.date <= endISO);
+    const weekTx = monthTx.filter(
+      (tx) => tx.date >= startISO && tx.date <= endISO,
+    );
     const weekIncome = weekTx
       .filter((tx) => tx.type === "income")
       .reduce((sum, tx) => sum + tx.amount, 0);
@@ -130,34 +127,45 @@ export default function StatsScreen() {
   });
 
   const handleLongPress = (tx) => {
-    Alert.alert(tx.note || "Giao dịch", `${formatMoney(tx.amount)} vnd`, [
-      { text: "Huỷ", style: "cancel" },
-      {
-        text: "✏️ Sửa",
-        onPress: () => {
-          setEditingTx(tx);
-          setEditAmount(String(tx.amount));
-          setEditNote(tx.note || "");
-          setEditCategory(tx.category);
-          setEditType(tx.type);
-          setShowEditModal(true);
+    Alert.alert(
+      tx.note || "Giao dịch",
+      `${formatMoney(
+        tx.type === "income" ? tx.amount : -tx.amount,
+        "signed",
+      )} vnd`,
+      [
+        { text: "Huỷ", style: "cancel" },
+        {
+          text: "✏️ Sửa",
+          onPress: () => {
+            setEditingTx(tx);
+            setEditAmount(String(tx.amount));
+            setEditNote(tx.note || "");
+            setEditCategory(tx.category);
+            setEditType(tx.type);
+            setShowEditModal(true);
+          },
         },
-      },
-      {
-        text: "🗑️ Xoá",
-        style: "destructive",
-        onPress: () => {
-          Alert.alert("Xoá giao dịch", "Bạn có chắc muốn xoá giao dịch này?", [
-            { text: "Huỷ", style: "cancel" },
-            {
-              text: "Xoá",
-              style: "destructive",
-              onPress: () => deleteTransaction(tx.id),
-            },
-          ]);
+        {
+          text: "🗑️ Xoá",
+          style: "destructive",
+          onPress: () => {
+            Alert.alert(
+              "Xoá giao dịch",
+              "Bạn có chắc muốn xoá giao dịch này?",
+              [
+                { text: "Huỷ", style: "cancel" },
+                {
+                  text: "Xoá",
+                  style: "destructive",
+                  onPress: () => deleteTransaction(tx.id),
+                },
+              ],
+            );
+          },
         },
-      },
-    ]);
+      ],
+    );
   };
 
   const handleEditSave = async () => {
@@ -259,7 +267,7 @@ export default function StatsScreen() {
           >
             <Text style={styles.summaryLabel}>THU NHẬP</Text>
             <Text style={[styles.summaryAmount, { color: colors.success }]}>
-              +{formatMoney(income)} vnd
+              {formatMoney(income, "signed")} vnd
             </Text>
           </View>
           <View
@@ -270,7 +278,7 @@ export default function StatsScreen() {
           >
             <Text style={styles.summaryLabel}>CHI TIÊU</Text>
             <Text style={[styles.summaryAmount, { color: colors.danger }]}>
-              -{formatMoney(expense)} vnd
+              {formatMoney(-expense, "signed")} vnd
             </Text>
           </View>
         </View>
@@ -284,7 +292,7 @@ export default function StatsScreen() {
               { color: balance >= 0 ? colors.success : colors.danger },
             ]}
           >
-            {balance >= 0 ? "+" : "-"}{formatMoney(balance)} vnd
+            {formatMoney(balance, "signed")} vnd
           </Text>
           {expense > 0 && income > 0 && (
             <Text style={styles.balanceSub}>
@@ -342,19 +350,15 @@ export default function StatsScreen() {
                 <Text style={styles.weekLabel}>{`Tuần ${w.week}`}</Text>
                 <View style={styles.weekBarTrack}>
                   <View
-                    style={[
-                      styles.weekBarExpense,
-                      { width: `${pctExpense}%` },
-                    ]}
+                    style={[styles.weekBarExpense, { width: `${pctExpense}%` }]}
                   />
                   <View
-                    style={[
-                      styles.weekBarIncome,
-                      { width: `${pctIncome}%` },
-                    ]}
+                    style={[styles.weekBarIncome, { width: `${pctIncome}%` }]}
                   />
                 </View>
-                <Text style={styles.weekValue}>{formatCompactVnd(w.weekExpense)}</Text>
+                <Text style={styles.weekValue}>
+                  {formatMoney(w.weekExpense)}
+                </Text>
               </View>
             );
           })}
@@ -400,8 +404,11 @@ export default function StatsScreen() {
                       },
                     ]}
                   >
-                    {tx.type === "income" ? "+" : "-"}
-                    {formatMoney(tx.amount)} vnd
+                    {formatMoney(
+                      tx.type === "income" ? tx.amount : -tx.amount,
+                      "signed",
+                    )}{" "}
+                    vnd
                   </Text>
                 </TouchableOpacity>
               );
@@ -546,7 +553,7 @@ export default function StatsScreen() {
               activeAction === "export" && styles.actionPillTxtActive,
             ]}
           >
-              Xuất CSV
+            Xuất CSV
           </Text>
         </TouchableOpacity>
 
@@ -601,34 +608,77 @@ export default function StatsScreen() {
 
       {/* Bottom Nav */}
       <View style={styles.bottomNav}>
-        {[
-          { icon: "🏠", label: "Trang chủ", route: "/" },
-          { icon: "📊", label: "Thống kê", route: "/stats" },
-          { icon: "➕", label: "Thêm", route: "/add" },
-          { icon: "💳", label: "Nợ", route: "/debt" },
-        ].map((item) => {
-          const isActive = item.route === "/stats";
-          return (
-            <TouchableOpacity
-              key={item.label}
-              style={styles.navItem}
-              onPress={() => {
-                if (isActive) return;
-                router.push(item.route);
-              }}
-            >
-              <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                {item.icon}
-              </Text>
-              <View style={[styles.navDot, isActive && styles.navDotActive]} />
-              <Text
-                style={[styles.navLabel, isActive && styles.navLabelActive]}
+        {(() => {
+          const activeRoute = "/stats";
+          const NAV_ITEMS = [
+            { icon: "🏠", label: "Trang chủ", route: "/" },
+            { icon: "📊", label: "Thống kê", route: "/stats" },
+            { isPlus: true },
+            { icon: "💳", label: "Nợ", route: "/debt" },
+            { icon: "🎯", label: "Ngân sách", route: "/budget" },
+          ];
+
+          return NAV_ITEMS.map((item) => {
+            if (item.isPlus) {
+              const isPlusActive = activeRoute === "/add";
+              return (
+                <TouchableOpacity
+                  key="plus"
+                  style={styles.navItem}
+                  onPress={() => {
+                    if (isPlusActive) return;
+                    router.push("/add");
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.navPlusBtn,
+                      !isPlusActive && styles.navPlusBtnInactive,
+                    ]}
+                  >
+                    <Text style={[styles.navPlusLabel, { marginTop: 0 }]}>
+                      +
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.navPlusLabel,
+                      !isPlusActive && styles.navPlusLabelInactive,
+                    ]}
+                  >
+                    Thêm
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
+
+            const isActive = item.route === activeRoute;
+            return (
+              <TouchableOpacity
+                key={item.label}
+                style={styles.navItem}
+                onPress={() => {
+                  if (isActive) return;
+                  router.push(item.route);
+                }}
               >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Text
+                  style={[styles.navIcon, isActive && styles.navIconActive]}
+                >
+                  {item.icon}
+                </Text>
+                <View
+                  style={[styles.navDot, isActive && styles.navDotActive]}
+                />
+                <Text
+                  style={[styles.navLabel, isActive && styles.navLabelActive]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          });
+        })()}
       </View>
     </SafeAreaView>
   );

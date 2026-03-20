@@ -16,8 +16,7 @@ import { SafeAreaView } from "react-native-safe-area-context";
 import useStore from "../store/useStore";
 import { getDb } from "../database/db";
 import makeBudgetStyles from "../styles/budgetStyle";
-
-const formatMoney = (amount) => Math.abs(amount).toLocaleString("vi-VN");
+import { formatMoney } from "../utils/formatMoney";
 
 const getRawNumber = (text) => text.replace(/\./g, "");
 
@@ -320,6 +319,11 @@ export default function BudgetScreen() {
               ? Math.min((spent / budget.amount) * 100, 100)
               : 0;
             const isOver = hasbudget && spent > budget.amount;
+            const progressColor = isOver
+              ? colors.danger
+              : percent >= 80
+                ? colors.amber
+                : colors.accent;
 
             return (
               <TouchableOpacity
@@ -350,7 +354,7 @@ export default function BudgetScreen() {
                         <Text
                           style={[
                             styles.catPercent,
-                            { color: isOver ? colors.danger : colors.accent },
+                            { color: progressColor },
                           ]}
                         >
                           {Math.round((spent / budget.amount) * 100)}%
@@ -372,7 +376,7 @@ export default function BudgetScreen() {
                           width: `${percent}%`,
                           backgroundColor: isOver
                             ? colors.danger
-                            : colors.accent,
+                            : progressColor,
                         },
                       ]}
                     />
@@ -617,34 +621,73 @@ export default function BudgetScreen() {
 
       {/* Bottom Nav */}
       <View style={styles.bottomNav}>
-        {[
-          { icon: "🏠", label: "Trang chủ", route: "/" },
-          { icon: "📊", label: "Thống kê", route: "/stats" },
-          { icon: "➕", label: "Thêm", route: "/add" },
-          { icon: "💳", label: "Nợ", route: "/debt" },
-        ].map((item) => {
-          const isActive = false;
-          return (
-            <TouchableOpacity
-              key={item.label}
-              style={styles.navItem}
-              onPress={() => {
-                if (isActive) return;
-                router.push(item.route);
-              }}
-            >
-              <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                {item.icon}
-              </Text>
-              <View style={[styles.navDot, isActive && styles.navDotActive]} />
-              <Text
-                style={[styles.navLabel, isActive && styles.navLabelActive]}
+        {(() => {
+          const activeRoute = "/budget";
+          const NAV_ITEMS = [
+            { icon: "🏠", label: "Trang chủ", route: "/" },
+            { icon: "📊", label: "Thống kê", route: "/stats" },
+            { isPlus: true },
+            { icon: "💳", label: "Nợ", route: "/debt" },
+            { icon: "🎯", label: "Ngân sách", route: "/budget" },
+          ];
+
+          return NAV_ITEMS.map((item) => {
+            if (item.isPlus) {
+              const isPlusActive = activeRoute === "/add";
+              return (
+                <TouchableOpacity
+                  key="plus"
+                  style={styles.navItem}
+                  onPress={() => {
+                    if (isPlusActive) return;
+                    router.push("/add");
+                  }}
+                >
+                  <View
+                    style={[
+                      styles.navPlusBtn,
+                      !isPlusActive && styles.navPlusBtnInactive,
+                    ]}
+                  >
+                    <Text style={[styles.navPlusLabel, { marginTop: 0 }]}>
+                      +
+                    </Text>
+                  </View>
+                  <Text
+                    style={[
+                      styles.navPlusLabel,
+                      !isPlusActive && styles.navPlusLabelInactive,
+                    ]}
+                  >
+                    Thêm
+                  </Text>
+                </TouchableOpacity>
+              );
+            }
+
+            const isActive = item.route === activeRoute;
+            return (
+              <TouchableOpacity
+                key={item.label}
+                style={styles.navItem}
+                onPress={() => {
+                  if (isActive) return;
+                  router.push(item.route);
+                }}
               >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
+                <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
+                  {item.icon}
+                </Text>
+                <View style={[styles.navDot, isActive && styles.navDotActive]} />
+                <Text
+                  style={[styles.navLabel, isActive && styles.navLabelActive]}
+                >
+                  {item.label}
+                </Text>
+              </TouchableOpacity>
+            );
+          });
+        })()}
       </View>
     </SafeAreaView>
   );

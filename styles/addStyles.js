@@ -146,6 +146,49 @@ const makeStyles = (colors) =>
       fontSize: 12,
       fontWeight: "600",
     },
+
+    // Bottom Nav (5 tabs + plus in middle)
+    bottomNav: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      flexDirection: "row",
+      justifyContent: "space-around",
+      paddingTop: 8,
+      paddingBottom: 28,
+      paddingHorizontal: 8,
+      backgroundColor: colors.bg1,
+      borderTopWidth: 0.5,
+      borderTopColor: colors.border,
+    },
+    navItem: { flex: 1, alignItems: "center", gap: 3 },
+    navIcon: { fontSize: 20, opacity: 0.3, textAlign: "center" },
+    navIconActive: { opacity: 1 },
+    navDot: { width: 4, height: 4, borderRadius: 2, backgroundColor: colors.accent, opacity: 0 },
+    navDotActive: { opacity: 1 },
+    navLabel: {
+      fontSize: 8,
+      color: colors.text2,
+      opacity: 0.3,
+      letterSpacing: 1,
+      textTransform: "uppercase",
+      fontWeight: "600",
+    },
+    navLabelActive: { color: colors.accent, opacity: 1 },
+
+    navPlusBtn: {
+      width: 42,
+      height: 42,
+      borderRadius: 21,
+      backgroundColor: colors.accent,
+      alignItems: "center",
+      justifyContent: "center",
+      marginBottom: 2,
+    },
+    navPlusBtnInactive: { opacity: 0.6 },
+    navPlusLabel: { fontSize: 8, fontWeight: "700", color: colors.accent, marginTop: 2, opacity: 1 },
+    navPlusLabelInactive: { opacity: 0.6 },
   });
 
 export default makeStyles;
