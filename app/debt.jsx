@@ -11,15 +11,14 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import dbSync, { getDb } from "../database/db";
 import useStore from "../store/useStore";
 import makeDebtStyles from "../styles/debtStyles";
-import { formatMoney } from "../utils/formatMoney";
+import { formatMoney, formatMoneyHero } from "../utils/formatMoney";
+import NavBar from "../components/NavBar";
 
 export default function DebtScreen() {
-  const router = useRouter();
   const debts = useStore((state) => state.debts);
   const addDebt = useStore((state) => state.addDebt);
   const updateDebtRemaining = useStore((state) => state.updateDebtRemaining);
@@ -54,13 +53,6 @@ export default function DebtScreen() {
   const getProgress = (debt) => {
     if (debt.total_amount === 0) return 0;
     return (1 - debt.remaining_amount / debt.total_amount) * 100;
-  };
-
-  const formatMoneyInput = (raw) => {
-    if (!raw) return "";
-    const num = raw.replace(/\./g, "");
-    if (isNaN(num)) return raw;
-    return parseInt(num).toLocaleString("vi-VN");
   };
 
   const getRawNumber = (formatted) => {
@@ -179,7 +171,10 @@ export default function DebtScreen() {
         {/* Tổng nợ */}
         <View style={styles.totalCard}>
           <Text style={styles.totalLabel}>TỔNG NỢ HIỆN TẠI</Text>
-          <Text style={styles.totalAmount}>{formatMoney(totalDebt)} vnd</Text>
+          <View style={styles.heroAmountRow}>
+            <Text style={styles.totalAmount}>{formatMoneyHero(totalDebt)}</Text>
+            <Text style={styles.heroCur}>đ</Text>
+          </View>
           <Text style={styles.totalSub}>
             {debts.length} khoản nợ đang theo dõi
           </Text>
@@ -212,10 +207,10 @@ export default function DebtScreen() {
                   </View>
                   <View style={styles.debtRight}>
                     <Text style={styles.debtRemaining}>
-                      {formatMoney(debt.remaining_amount)} vnd
+                      {formatMoney(debt.remaining_amount, "full")}
                     </Text>
                     <Text style={styles.debtTotal}>
-                      / {formatMoney(debt.total_amount)} vnd
+                      / {formatMoney(debt.total_amount, "full")}
                     </Text>
                   </View>
                 </View>
@@ -301,9 +296,7 @@ export default function DebtScreen() {
                 style={styles.input}
                 value={
                   newAmount
-                    ? parseInt(newAmount.replace(/\./g, "")).toLocaleString(
-                        "vi-VN",
-                      )
+                    ? formatMoney(parseInt(newAmount.replace(/\./g, ""), 10), "full").replace("đ", "")
                     : ""
                 }
                 onChangeText={(text) => setNewAmount(getRawNumber(text))}
@@ -363,9 +356,7 @@ export default function DebtScreen() {
                 style={styles.input}
                 value={
                   editAmount
-                    ? parseInt(editAmount.replace(/\./g, "")).toLocaleString(
-                        "vi-VN",
-                      )
+                    ? formatMoney(parseInt(editAmount.replace(/\./g, ""), 10), "full").replace("đ", "")
                     : ""
                 }
                 onChangeText={(text) => setEditAmount(getRawNumber(text))}
@@ -413,7 +404,7 @@ export default function DebtScreen() {
                 Trả nợ — {selectedDebt?.name}
               </Text>
               <Text style={styles.modalSub}>
-                Còn lại: {formatMoney(selectedDebt?.remaining_amount || 0)} vnd
+                Còn lại: {formatMoney(selectedDebt?.remaining_amount || 0, "full")}
               </Text>
 
               <Text style={styles.inputLabel}>SỐ TIỀN TRẢ</Text>
@@ -421,9 +412,7 @@ export default function DebtScreen() {
                 style={styles.input}
                 value={
                   payAmount
-                    ? parseInt(payAmount.replace(/\./g, "")).toLocaleString(
-                        "vi-VN",
-                      )
+                    ? formatMoney(parseInt(payAmount.replace(/\./g, ""), 10), "full").replace("đ", "")
                     : ""
                 }
                 onChangeText={(text) => setPayAmount(getRawNumber(text))}
@@ -451,76 +440,7 @@ export default function DebtScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        {(() => {
-          const activeRoute = "/debt";
-          const NAV_ITEMS = [
-            { icon: "🏠", label: "Trang chủ", route: "/" },
-            { icon: "📊", label: "Thống kê", route: "/stats" },
-            { isPlus: true },
-            { icon: "💳", label: "Nợ", route: "/debt" },
-            { icon: "🎯", label: "Ngân sách", route: "/budget" },
-          ];
-
-          return NAV_ITEMS.map((item) => {
-            if (item.isPlus) {
-              const isPlusActive = activeRoute === "/add";
-              return (
-                <TouchableOpacity
-                  key="plus"
-                  style={styles.navItem}
-                  onPress={() => {
-                    if (isPlusActive) return;
-                    router.push("/add");
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.navPlusBtn,
-                      !isPlusActive && styles.navPlusBtnInactive,
-                    ]}
-                  >
-                    <Text style={[styles.navPlusLabel, { marginTop: 0 }]}>
-                      +
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.navPlusLabel,
-                      !isPlusActive && styles.navPlusLabelInactive,
-                    ]}
-                  >
-                    Thêm
-                  </Text>
-                </TouchableOpacity>
-              );
-            }
-
-            const isActive = item.route === activeRoute;
-            return (
-              <TouchableOpacity
-                key={item.label}
-                style={styles.navItem}
-                onPress={() => {
-                  if (isActive) return;
-                  router.push(item.route);
-                }}
-              >
-                <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                  {item.icon}
-                </Text>
-                <View style={[styles.navDot, isActive && styles.navDotActive]} />
-                <Text
-                  style={[styles.navLabel, isActive && styles.navLabelActive]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          });
-        })()}
-      </View>
+      <NavBar activeRoute="/debt" />
     </SafeAreaView>
   );
 }

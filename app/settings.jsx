@@ -4,6 +4,7 @@ import { useRouter } from 'expo-router';
 import { SafeAreaView } from 'react-native-safe-area-context';
 import useStore from '../store/useStore';
 import { FONTS } from '../constants/theme';
+import { BackIcon } from '../components/icons';
 
 export default function SettingsScreen() {
   const router = useRouter();
@@ -18,7 +19,7 @@ export default function SettingsScreen() {
       {/* Header */}
       <View style={s.header}>
         <TouchableOpacity onPress={() => router.back()} style={s.backBtn}>
-          <Text style={s.backIcon}>←</Text>
+          <BackIcon size={18} color={colors.text1} />
         </TouchableOpacity>
         <Text style={s.headerTitle}>Cài đặt</Text>
         <View style={{ width: 40 }} />
@@ -80,11 +81,6 @@ const makeStyles = (colors) =>
       justifyContent: 'center',
       borderRadius: 10,
       backgroundColor: colors.surface2,
-    },
-    backIcon: {
-      fontSize: 18,
-      color: colors.text1,
-      fontFamily: FONTS.medium,
     },
     headerTitle: {
       fontSize: 17,

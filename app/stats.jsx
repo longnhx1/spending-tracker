@@ -11,18 +11,19 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useStore from "../store/useStore";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
 import makeStatsStyles from "../styles/statsStyles";
-import { formatMoney } from "../utils/formatMoney";
+import { formatMoney, formatMoneyHero } from "../utils/formatMoney";
+import { getCategoryEmoji, getCategoryLabel } from "../utils/categoryUtils";
+import NavBar from "../components/NavBar";
+import { ChevronLeftIcon, ChevronRightIcon } from "../components/icons";
 
 const pad2 = (n) => String(n).padStart(2, "0");
 
 export default function StatsScreen() {
-  const router = useRouter();
   const transactions = useStore((state) => state.transactions);
   const loadTransactions = useStore((state) => state.loadTransactions);
   const updateTransaction = useStore((state) => state.updateTransaction);
@@ -132,7 +133,7 @@ export default function StatsScreen() {
       `${formatMoney(
         tx.type === "income" ? tx.amount : -tx.amount,
         "signed",
-      )} vnd`,
+      )}`,
       [
         { text: "Huỷ", style: "cancel" },
         {
@@ -190,8 +191,7 @@ export default function StatsScreen() {
     const rows = txList
       .map((tx) => {
         const type = tx.type === "income" ? "Thu nhập" : "Chi tiêu";
-        const cat =
-          categories.find((c) => c.id === tx.category)?.label || tx.category;
+        const cat = getCategoryLabel(tx.category, categories);
         const note = tx.note ? `"${tx.note.replace(/"/g, '""')}"` : "";
         return `${tx.date},${type},${cat},${note},${tx.amount}`;
       })
@@ -249,36 +249,40 @@ export default function StatsScreen() {
             style={styles.monthArrow}
             onPress={() => changeMonth(-1)}
           >
-            <Text style={styles.monthArrowText}>‹</Text>
+            <ChevronLeftIcon size={16} color={colors.text2} />
           </TouchableOpacity>
           <Text style={styles.monthName}>{monthLabel.toUpperCase()}</Text>
           <TouchableOpacity
             style={styles.monthArrow}
             onPress={() => changeMonth(1)}
           >
-            <Text style={styles.monthArrowText}>›</Text>
+            <ChevronRightIcon size={16} color={colors.text2} />
           </TouchableOpacity>
         </View>
 
         {/* Tổng quan tháng */}
         <View style={styles.summaryRow}>
-          <View
-            style={[styles.summaryCard, { borderColor: "rgba(0,229,160,0.2)" }]}
-          >
+          <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>THU NHẬP</Text>
             <Text style={[styles.summaryAmount, { color: colors.success }]}>
-              {formatMoney(income, "signed")} vnd
+              {formatMoney(income, "signed")}
             </Text>
           </View>
-          <View
-            style={[
-              styles.summaryCard,
-              { borderColor: "rgba(255,77,109,0.2)" },
-            ]}
-          >
+          <View style={styles.summaryCard}>
             <Text style={styles.summaryLabel}>CHI TIÊU</Text>
             <Text style={[styles.summaryAmount, { color: colors.danger }]}>
-              {formatMoney(-expense, "signed")} vnd
+              {formatMoney(-expense, "signed")}
+            </Text>
+          </View>
+          <View style={styles.summaryCard}>
+            <Text style={styles.summaryLabel}>SỐ DƯ</Text>
+            <Text
+              style={[
+                styles.summaryAmount,
+                { color: balance >= 0 ? colors.success : colors.danger },
+              ]}
+            >
+              {formatMoney(balance, "signed")}
             </Text>
           </View>
         </View>
@@ -286,14 +290,17 @@ export default function StatsScreen() {
         {/* Số dư */}
         <View style={styles.balanceCard}>
           <Text style={styles.balanceLabel}>SỐ DƯ THÁNG NÀY</Text>
-          <Text
-            style={[
-              styles.balanceAmount,
-              { color: balance >= 0 ? colors.success : colors.danger },
-            ]}
-          >
-            {formatMoney(balance, "signed")} vnd
-          </Text>
+          <View style={styles.heroAmountRow}>
+            <Text
+              style={[
+                styles.balanceAmount,
+                { color: balance >= 0 ? colors.success : colors.danger },
+              ]}
+            >
+              {formatMoneyHero(Math.abs(balance))}
+            </Text>
+            <Text style={styles.heroCur}>đ</Text>
+          </View>
           {expense > 0 && income > 0 && (
             <Text style={styles.balanceSub}>
               Đã tiêu {Math.round((expense / income) * 100)}% thu nhập
@@ -319,7 +326,7 @@ export default function StatsScreen() {
                   <View>
                     <Text style={styles.catName}>{cat.label}</Text>
                     <Text style={styles.catAmount}>
-                      {formatMoney(cat.total)} vnd
+                      {formatMoney(cat.total)}
                     </Text>
                   </View>
                 </View>
@@ -376,7 +383,6 @@ export default function StatsScreen() {
             </View>
           ) : (
             monthTx.map((tx) => {
-              const cat = categories.find((c) => c.id === tx.category);
               return (
                 <TouchableOpacity
                   key={tx.id}
@@ -386,14 +392,16 @@ export default function StatsScreen() {
                 >
                   <View style={styles.txIcon}>
                     <Text style={styles.txEmoji}>
-                      {tx.type === "income" ? "💸" : cat?.emoji || "📦"}
+                      {getCategoryEmoji(tx.category, categories)}
                     </Text>
                   </View>
                   <View style={styles.txInfo}>
                     <Text style={styles.txName}>
-                      {tx.note || cat?.label || tx.category}
+                      {tx.note || getCategoryLabel(tx.category, categories)}
                     </Text>
-                    <Text style={styles.txMeta}>{tx.date}</Text>
+                    <Text style={styles.txMeta}>
+                      {getCategoryLabel(tx.category, categories)} · {tx.date}
+                    </Text>
                   </View>
                   <Text
                     style={[
@@ -407,8 +415,7 @@ export default function StatsScreen() {
                     {formatMoney(
                       tx.type === "income" ? tx.amount : -tx.amount,
                       "signed",
-                    )}{" "}
-                    vnd
+                    )}
                   </Text>
                 </TouchableOpacity>
               );
@@ -469,9 +476,7 @@ export default function StatsScreen() {
                 style={styles.input}
                 value={
                   editAmount
-                    ? parseInt(editAmount.replace(/\./g, "")).toLocaleString(
-                        "vi-VN",
-                      )
+                    ? formatMoney(parseInt(editAmount.replace(/\./g, ""), 10), "full").replace("đ", "")
                     : ""
                 }
                 onChangeText={(text) => setEditAmount(text.replace(/\./g, ""))}
@@ -606,80 +611,7 @@ export default function StatsScreen() {
         </TouchableOpacity>
       </View>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        {(() => {
-          const activeRoute = "/stats";
-          const NAV_ITEMS = [
-            { icon: "🏠", label: "Trang chủ", route: "/" },
-            { icon: "📊", label: "Thống kê", route: "/stats" },
-            { isPlus: true },
-            { icon: "💳", label: "Nợ", route: "/debt" },
-            { icon: "🎯", label: "Ngân sách", route: "/budget" },
-          ];
-
-          return NAV_ITEMS.map((item) => {
-            if (item.isPlus) {
-              const isPlusActive = activeRoute === "/add";
-              return (
-                <TouchableOpacity
-                  key="plus"
-                  style={styles.navItem}
-                  onPress={() => {
-                    if (isPlusActive) return;
-                    router.push("/add");
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.navPlusBtn,
-                      !isPlusActive && styles.navPlusBtnInactive,
-                    ]}
-                  >
-                    <Text style={[styles.navPlusLabel, { marginTop: 0 }]}>
-                      +
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.navPlusLabel,
-                      !isPlusActive && styles.navPlusLabelInactive,
-                    ]}
-                  >
-                    Thêm
-                  </Text>
-                </TouchableOpacity>
-              );
-            }
-
-            const isActive = item.route === activeRoute;
-            return (
-              <TouchableOpacity
-                key={item.label}
-                style={styles.navItem}
-                onPress={() => {
-                  if (isActive) return;
-                  router.push(item.route);
-                }}
-              >
-                <Text
-                  style={[styles.navIcon, isActive && styles.navIconActive]}
-                >
-                  {item.icon}
-                </Text>
-                <View
-                  style={[styles.navDot, isActive && styles.navDotActive]}
-                />
-                <Text
-                  style={[styles.navLabel, isActive && styles.navLabelActive]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          });
-        })()}
-      </View>
+      <NavBar activeRoute="/stats" />
     </SafeAreaView>
   );
 }

@@ -1,6 +1,6 @@
 // styles/homeStyles.js
 import { StyleSheet } from "react-native";
-import { FONTS, DARK } from "../constants/theme";
+import { FONTS } from "../constants/theme";
 
 const makeStyles = (colors) =>
   StyleSheet.create({
@@ -9,10 +9,10 @@ const makeStyles = (colors) =>
 
     heroCard: {
       margin: 16,
-      backgroundColor: DARK.bg2, // Always dark (design spec)
+      backgroundColor: colors.bg2,
       borderRadius: 22,
       borderWidth: 0.5,
-      borderColor: DARK.border2,
+      borderColor: colors.border2,
       padding: 20,
     },
     heroLabel: {
@@ -20,19 +20,24 @@ const makeStyles = (colors) =>
       letterSpacing: 2.5,
       opacity: 0.4,
       fontFamily: FONTS.bold,
-      color: DARK.text1,
+      color: colors.text1,
       fontWeight: "700",
+    },
+    heroAmountRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      gap: 4,
+      marginTop: 6,
+      marginBottom: 2,
     },
     heroAmount: {
       fontSize: 36,
       fontWeight: "800",
       letterSpacing: -1.5,
       fontFamily: FONTS.bold,
-      color: DARK.text1,
-      marginTop: 6,
-      marginBottom: 2,
+      color: colors.text1,
     },
-    heroCur: { fontSize: 16, opacity: 0.4, color: DARK.text1 },
+    heroCur: { fontSize: 18, fontWeight: "400", opacity: 0.4, color: colors.text1 },
     heroSub: {
       fontSize: 10,
       fontWeight: "600",
@@ -44,7 +49,7 @@ const makeStyles = (colors) =>
     pillRow: { flexDirection: "row", gap: 8, marginTop: 14 },
     pill: {
       flex: 1,
-      backgroundColor: colors.glassPill,
+      backgroundColor: colors.chipBg,
       borderRadius: 10,
       padding: 8,
     },
@@ -54,7 +59,7 @@ const makeStyles = (colors) =>
       opacity: 0.4,
       fontWeight: "700",
       fontFamily: FONTS.bold,
-      color: DARK.text1,
+      color: colors.text1,
     },
     pillVal: {
       fontSize: 13,

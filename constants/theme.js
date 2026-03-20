@@ -28,6 +28,8 @@ export const DARK = {
   accentGlass: "rgba(0,168,255,0.08)",
   modalOverlay: "rgba(0,0,0,0.7)",
   amber: "#FFB547",
+  amberDim: "rgba(255,181,71,0.12)",
+  chipBg: "rgba(255,255,255,0.07)",
 };
 
 export const LIGHT = {
@@ -56,7 +58,9 @@ export const LIGHT = {
   glassPill: "rgba(255,255,255,0.07)",
   accentGlass: "rgba(0,133,204,0.08)",
   modalOverlay: "rgba(0,0,0,0.7)",
-  amber: "#FFB547",
+  amber: "#E8920A",
+  amberDim: "rgba(232,146,10,0.10)",
+  chipBg: "rgba(0,0,0,0.05)",
 };
 
 // Alias tiện dùng — component cũ có thể import `COLORS`

@@ -10,9 +10,12 @@ import {
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import makeHomeStyles from "../styles/homeStyles";
+import NavBar from "../components/NavBar";
+import { SettingsIcon } from "../components/icons";
 
 import useStore from "../store/useStore";
 import { formatMoney, formatMoneyHero } from "../utils/formatMoney";
+import { getCategoryEmoji, getCategoryLabel } from "../utils/categoryUtils";
 
 export default function HomeScreen() {
   const router = useRouter();
@@ -25,18 +28,6 @@ export default function HomeScreen() {
   const getMonthlySummary = useStore((state) => state.getMonthlySummary);
   const headerStyles = makeHeaderStyles(colors);
   const currentMonthStr = useStore((s) => s.currentMonth);
-
-  const getCategoryEmoji = (categoryId) => {
-    if (categoryId === "thu_nhap") return "💸";
-    const cat = categories.find((c) => c.id === categoryId);
-    return cat ? cat.emoji : "📦";
-  };
-
-  const getCategoryLabel = (categoryId) => {
-    if (categoryId === "thu_nhap") return "Thu nhập";
-    const cat = categories.find((c) => c.id === categoryId);
-    return cat ? cat.label : categoryId;
-  };
 
   const { income, expense, balance } = getMonthlySummary();
 
@@ -75,7 +66,7 @@ export default function HomeScreen() {
           style={headerStyles.settingsBtn}
           onPress={() => router.push("/settings")}
         >
-          <Text style={headerStyles.settingsIcon}>⚙️</Text>
+          <SettingsIcon size={18} color={colors.text2} />
         </TouchableOpacity>
       </View>
 
@@ -83,13 +74,10 @@ export default function HomeScreen() {
         {/* Balance Card */}
         <View style={styles.heroCard}>
           <Text style={styles.heroLabel}>SỐ DƯ HIỆN TẠI</Text>
-          <Text
-            style={styles.heroAmount}
-          >
-            {balance < 0 ? "-" : ""}
-            {formatMoneyHero(balance)}
-          </Text>
-          <Text style={styles.heroCur}>đ</Text>
+          <View style={styles.heroAmountRow}>
+            <Text style={styles.heroAmount}>{formatMoneyHero(Math.abs(balance))}</Text>
+            <Text style={styles.heroCur}>đ</Text>
+          </View>
           <Text
             style={[
               styles.heroSub,
@@ -103,19 +91,19 @@ export default function HomeScreen() {
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>THU</Text>
               <Text style={[styles.pillVal, { color: colors.success }]}>
-                {formatMoney(income, "signed")} vnd
+                {formatMoney(income, "signed")}
               </Text>
             </View>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>CHI</Text>
               <Text style={[styles.pillVal, { color: colors.danger }]}>
-                {formatMoney(-expense, "signed")} vnd
+                {formatMoney(-expense, "signed")}
               </Text>
             </View>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>NỢ</Text>
               <Text style={[styles.pillVal, { color: colors.danger }]}>
-                {formatMoney(-totalDebt, "signed")} vnd
+                {formatMoney(-totalDebt, "signed")}
               </Text>
             </View>
           </View>
@@ -157,15 +145,15 @@ export default function HomeScreen() {
             <View key={tx.id} style={styles.txItem}>
               <View style={styles.txIcon}>
                 <Text style={styles.txEmoji}>
-                  {getCategoryEmoji(tx.category)}
+                  {getCategoryEmoji(tx.category, categories)}
                 </Text>
               </View>
               <View style={styles.txInfo}>
                 <Text style={styles.txName}>
-                  {tx.note || getCategoryLabel(tx.category)}
+                  {tx.note || getCategoryLabel(tx.category, categories)}
                 </Text>
                 <Text style={styles.txMeta}>
-                  {getCategoryLabel(tx.category)} · {tx.date}
+                  {getCategoryLabel(tx.category, categories)} · {tx.date}
                 </Text>
               </View>
               <Text
@@ -177,7 +165,7 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                {formatMoney(tx.type === "income" ? tx.amount : -tx.amount, "signed")} vnd
+                {formatMoney(tx.type === "income" ? tx.amount : -tx.amount, "signed")}
               </Text>
             </View>
           ))
@@ -186,77 +174,7 @@ export default function HomeScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Bottom Navigation */}
-      <View style={styles.bottomNav}>
-        {(() => {
-          const activeRoute = "/";
-          const NAV_ITEMS = [
-            { icon: "🏠", label: "Trang chủ", route: "/" },
-            { icon: "📊", label: "Thống kê", route: "/stats" },
-            { isPlus: true },
-            { icon: "💳", label: "Nợ", route: "/debt" },
-            { icon: "🎯", label: "Ngân sách", route: "/budget" },
-          ];
-
-          return NAV_ITEMS.map((item) => {
-            if (item.isPlus) {
-              const isPlusActive = activeRoute === "/add";
-              return (
-                <TouchableOpacity
-                  key="plus"
-                  style={styles.navItem}
-                  onPress={() => {
-                    if (isPlusActive) return;
-                    router.push("/add");
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.navPlusBtn,
-                      !isPlusActive && styles.navPlusBtnInactive,
-                    ]}
-                  >
-                    <Text style={[styles.navPlusLabel, { marginTop: 0 }]}>
-                      +
-                    </Text>
-                  </View>
-                  {/* label nằm dưới icon để giống tab khác */}
-                  <Text
-                    style={[
-                      styles.navPlusLabel,
-                      !isPlusActive && styles.navPlusLabelInactive,
-                    ]}
-                  >
-                    Thêm
-                  </Text>
-                </TouchableOpacity>
-              );
-            }
-
-            const isActive = item.route === activeRoute;
-            return (
-              <TouchableOpacity
-                key={item.label}
-                style={styles.navItem}
-                onPress={() => {
-                  if (isActive) return;
-                  router.push(item.route);
-                }}
-              >
-                <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                  {item.icon}
-                </Text>
-                <View style={[styles.navDot, isActive && styles.navDotActive]} />
-                <Text
-                  style={[styles.navLabel, isActive && styles.navLabelActive]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          });
-        })()}
-      </View>
+      <NavBar activeRoute="/" />
     </SafeAreaView>
   );
 }

@@ -11,17 +11,21 @@ import {
   KeyboardAvoidingView,
   Platform,
 } from "react-native";
-import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 import useStore from "../store/useStore";
 import { getDb } from "../database/db";
 import makeBudgetStyles from "../styles/budgetStyle";
 import { formatMoney } from "../utils/formatMoney";
+import NavBar from "../components/NavBar";
 
 const getRawNumber = (text) => text.replace(/\./g, "");
+const getProgressColor = (percent, colors) => {
+  if (percent >= 100) return colors.danger;
+  if (percent >= 80) return colors.amber;
+  return colors.accent;
+};
 
 export default function BudgetScreen() {
-  const router = useRouter();
   const transactions = useStore((state) => state.transactions);
   const loadTransactions = useStore((state) => state.loadTransactions);
   const colors = useStore((state) => state.colors);
@@ -254,14 +258,14 @@ export default function BudgetScreen() {
           <View style={styles.overviewCard}>
             <Text style={styles.overviewLabel}>TỔNG NGÂN SÁCH</Text>
             <Text style={styles.overviewAmount}>
-              {formatMoney(totalBudget)} vnd
+              {formatMoney(totalBudget)}
             </Text>
 
             <View style={styles.overviewRow}>
               <View>
                 <Text style={styles.overviewSub}>Đã chi</Text>
                 <Text style={[styles.overviewVal, { color: colors.danger }]}>
-                  {formatMoney(totalSpent)} vnd
+                  {formatMoney(totalSpent)}
                 </Text>
               </View>
               <View>
@@ -277,7 +281,7 @@ export default function BudgetScreen() {
                     },
                   ]}
                 >
-                  {formatMoney(Math.abs(totalBudget - totalSpent))} vnd
+                  {formatMoney(Math.abs(totalBudget - totalSpent))}
                 </Text>
               </View>
               <View>
@@ -319,11 +323,7 @@ export default function BudgetScreen() {
               ? Math.min((spent / budget.amount) * 100, 100)
               : 0;
             const isOver = hasbudget && spent > budget.amount;
-            const progressColor = isOver
-              ? colors.danger
-              : percent >= 80
-                ? colors.amber
-                : colors.accent;
+            const progressColor = getProgressColor(percent, colors);
 
             return (
               <TouchableOpacity
@@ -339,7 +339,7 @@ export default function BudgetScreen() {
                       <Text style={styles.catName}>{cat.label}</Text>
                       {hasbudget ? (
                         <Text style={styles.catSub}>
-                          {formatMoney(spent)} vnd / {formatMoney(budget.amount)} vnd
+                          {formatMoney(spent)} / {formatMoney(budget.amount)}
                         </Text>
                       ) : (
                         <Text style={styles.catSubMuted}>
@@ -490,7 +490,7 @@ export default function BudgetScreen() {
                     Ngân sách — {selectedCat?.label}
                   </Text>
                   <Text style={styles.modalSub}>
-                    Đã chi: {formatMoney(getSpent(selectedCat?.id || ""))} vnd
+                    Đã chi: {formatMoney(getSpent(selectedCat?.id || ""))}
                   </Text>
                 </View>
               </View>
@@ -500,9 +500,7 @@ export default function BudgetScreen() {
                 style={styles.input}
                 value={
                   budgetAmount
-                    ? parseInt(getRawNumber(budgetAmount)).toLocaleString(
-                        "vi-VN",
-                      )
+                    ? formatMoney(parseInt(getRawNumber(budgetAmount), 10), "full").replace("đ", "")
                     : ""
                 }
                 onChangeText={(text) => setBudgetAmount(getRawNumber(text))}
@@ -619,76 +617,7 @@ export default function BudgetScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        {(() => {
-          const activeRoute = "/budget";
-          const NAV_ITEMS = [
-            { icon: "🏠", label: "Trang chủ", route: "/" },
-            { icon: "📊", label: "Thống kê", route: "/stats" },
-            { isPlus: true },
-            { icon: "💳", label: "Nợ", route: "/debt" },
-            { icon: "🎯", label: "Ngân sách", route: "/budget" },
-          ];
-
-          return NAV_ITEMS.map((item) => {
-            if (item.isPlus) {
-              const isPlusActive = activeRoute === "/add";
-              return (
-                <TouchableOpacity
-                  key="plus"
-                  style={styles.navItem}
-                  onPress={() => {
-                    if (isPlusActive) return;
-                    router.push("/add");
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.navPlusBtn,
-                      !isPlusActive && styles.navPlusBtnInactive,
-                    ]}
-                  >
-                    <Text style={[styles.navPlusLabel, { marginTop: 0 }]}>
-                      +
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.navPlusLabel,
-                      !isPlusActive && styles.navPlusLabelInactive,
-                    ]}
-                  >
-                    Thêm
-                  </Text>
-                </TouchableOpacity>
-              );
-            }
-
-            const isActive = item.route === activeRoute;
-            return (
-              <TouchableOpacity
-                key={item.label}
-                style={styles.navItem}
-                onPress={() => {
-                  if (isActive) return;
-                  router.push(item.route);
-                }}
-              >
-                <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                  {item.icon}
-                </Text>
-                <View style={[styles.navDot, isActive && styles.navDotActive]} />
-                <Text
-                  style={[styles.navLabel, isActive && styles.navLabelActive]}
-                >
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          });
-        })()}
-      </View>
+      <NavBar activeRoute="/budget" />
     </SafeAreaView>
   );
 }

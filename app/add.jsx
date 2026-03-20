@@ -2,24 +2,48 @@ import { useMemo, useState } from "react";
 import {
   View,
   Text,
-  StyleSheet,
   TextInput,
   TouchableOpacity,
   ScrollView,
   Alert,
   ActivityIndicator,
+  Platform,
 } from "react-native";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
 import useStore from "../store/useStore";
 import makeAddStyles from "../styles/addStyles";
+import { formatMoney } from "../utils/formatMoney";
+import {
+  BackIcon,
+  CalendarIcon,
+  ChevronRightIcon,
+} from "../components/icons";
 
 const pad2 = (n) => String(n).padStart(2, "0");
-const todayISO = () => {
-  const d = new Date();
-  return `${d.getFullYear()}-${pad2(d.getMonth() + 1)}-${pad2(d.getDate())}`;
+const formatDateDisplay = (d) => {
+  const days = [
+    "Chủ nhật",
+    "Thứ hai",
+    "Thứ ba",
+    "Thứ tư",
+    "Thứ năm",
+    "Thứ sáu",
+    "Thứ bảy",
+  ];
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  const yyyy = d.getFullYear();
+  return `${days[d.getDay()]}, ${dd}/${mm}/${yyyy}`;
+};
+
+const formatDateISO = (d) => {
+  const dd = String(d.getDate()).padStart(2, "0");
+  const mm = String(d.getMonth() + 1).padStart(2, "0");
+  return `${d.getFullYear()}-${mm}-${dd}`;
 };
 
 const normalize = (s) =>
@@ -109,7 +133,8 @@ export default function AddScreen() {
   const [amount, setAmount] = useState("");
   const [category, setCategory] = useState("");
   const [note, setNote] = useState("");
-  const [date, setDate] = useState(todayISO());
+  const [date, setDate] = useState(new Date());
+  const [showPicker, setShowPicker] = useState(false);
 
   const [isClassifying, setIsClassifying] = useState(false);
 
@@ -151,7 +176,7 @@ export default function AddScreen() {
       type,
       type === "income" ? "thu_nhap" : category,
       note,
-      date,
+      formatDateISO(date),
     );
 
     router.back();
@@ -161,7 +186,7 @@ export default function AddScreen() {
     <SafeAreaView style={styles.container} edges={["top", "left", "right"]}>
       <View style={styles.header}>
         <TouchableOpacity onPress={() => router.back()} style={styles.backBtn}>
-          <Text style={styles.backText}>←</Text>
+          <BackIcon size={18} color={colors.text1} />
         </TouchableOpacity>
         <Text style={styles.title}>Thêm giao dịch</Text>
         <View style={{ width: 34 }} />
@@ -219,7 +244,7 @@ export default function AddScreen() {
               ]}
               value={
                 amount
-                  ? parseInt(amount.replace(/\./g, "")).toLocaleString("vi-VN")
+                  ? formatMoney(parseInt(amount.replace(/\./g, ""), 10), "full").replace("đ", "")
                   : ""
               }
               onChangeText={(text) => {
@@ -235,20 +260,38 @@ export default function AddScreen() {
               textContentType="none"
             />
             <Text style={[styles.amountCur, { marginRight: 0, marginLeft: 8 }]}>
-              vnd
+              đ
             </Text>
           </View>
         </View>
 
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>NGÀY</Text>
-          <TextInput
-            style={styles.fieldInput}
-            value={date}
-            onChangeText={setDate}
-            placeholder="YYYY-MM-DD"
-            placeholderTextColor={colors.textMuted}
-          />
+          <TouchableOpacity
+            style={styles.dateBtn}
+            onPress={() => setShowPicker(true)}
+            activeOpacity={0.7}
+          >
+            <View style={styles.dateBtnIcon}>
+              <CalendarIcon color={colors.accent} size={16} />
+            </View>
+            <Text style={styles.dateBtnText}>{formatDateDisplay(date)}</Text>
+            <ChevronRightIcon color={colors.text3} size={14} />
+          </TouchableOpacity>
+          {showPicker && (
+            <DateTimePicker
+              value={date}
+              mode="date"
+              display={Platform.OS === "ios" ? "spinner" : "default"}
+              maximumDate={new Date()}
+              onChange={(event, selectedDate) => {
+                setShowPicker(Platform.OS === "ios");
+                if (selectedDate) setDate(selectedDate);
+              }}
+              locale="vi-VN"
+              style={{ marginTop: 8 }}
+            />
+          )}
         </View>
 
         <View style={styles.field}>
@@ -309,74 +352,6 @@ export default function AddScreen() {
         <View style={{ height: 24 }} />
       </ScrollView>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        {(() => {
-          const activeRoute = "/add";
-          const NAV_ITEMS = [
-            { icon: "🏠", label: "Trang chủ", route: "/" },
-            { icon: "📊", label: "Thống kê", route: "/stats" },
-            { isPlus: true },
-            { icon: "💳", label: "Nợ", route: "/debt" },
-            { icon: "🎯", label: "Ngân sách", route: "/budget" },
-          ];
-
-          return NAV_ITEMS.map((item) => {
-            if (item.isPlus) {
-              const isPlusActive = activeRoute === "/add";
-              return (
-                <TouchableOpacity
-                  key="plus"
-                  style={styles.navItem}
-                  onPress={() => {
-                    if (isPlusActive) return;
-                    router.push("/add");
-                  }}
-                >
-                  <View
-                    style={[
-                      styles.navPlusBtn,
-                      !isPlusActive && styles.navPlusBtnInactive,
-                    ]}
-                  >
-                    <Text style={[styles.navPlusLabel, { marginTop: 0 }]}>
-                      +
-                    </Text>
-                  </View>
-                  <Text
-                    style={[
-                      styles.navPlusLabel,
-                      !isPlusActive && styles.navPlusLabelInactive,
-                    ]}
-                  >
-                    Thêm
-                  </Text>
-                </TouchableOpacity>
-              );
-            }
-
-            const isActive = item.route === activeRoute;
-            return (
-              <TouchableOpacity
-                key={item.label}
-                style={styles.navItem}
-                onPress={() => {
-                  if (isActive) return;
-                  router.push(item.route);
-                }}
-              >
-                <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                  {item.icon}
-                </Text>
-                <View style={[styles.navDot, isActive && styles.navDotActive]} />
-                <Text style={[styles.navLabel, isActive && styles.navLabelActive]}>
-                  {item.label}
-                </Text>
-              </TouchableOpacity>
-            );
-          });
-        })()}
-      </View>
     </SafeAreaView>
   );
 }
