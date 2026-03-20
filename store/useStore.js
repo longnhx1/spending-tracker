@@ -1,5 +1,6 @@
 // store/useStore.js
 import { create } from 'zustand';
+import { DARK, LIGHT } from '../constants/theme';
 import {
     getTransactions,
     addTransaction,
@@ -12,6 +13,15 @@ import {
 } from '../database/db';
 
 const useStore = create((set, get) => ({
+    // ── Theme ──────────────────────────────────────────
+    isDark: true,
+    colors: DARK,
+
+    toggleTheme: () => {
+        const next = !get().isDark;
+        set({ isDark: next, colors: next ? DARK : LIGHT });
+    },
+
     // State
     transactions: [],
     debts: [],

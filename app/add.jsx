@@ -40,19 +40,19 @@ const localClassify = (note) => {
   if (!t) return null;
 
   const rules = [
-    { id: "an_uong", kw: ["an", "uong", "com", "pho", "cafe", "tra sua"] },
-    { id: "di_chuyen", kw: ["xang", "grab", "taxi", "xe buyt", "gui xe"] },
-    { id: "hoc_tap", kw: ["sach", "khoa hoc", "hoc phi", "luyen thi"] },
-    { id: "giai_tri", kw: ["netflix", "spotify", "game", "rap phim"] },
-    { id: "suc_khoe", kw: ["thuoc", "kham", "vien phi", "nha thuoc"] },
-    { id: "mua_sam", kw: ["shopee", "lazada", "ao", "quan", "giay"] },
-    { id: "tien_ich", kw: ["dien", "nuoc", "mang", "internet", "tien nha"] },
+    { id: "food", kw: ["an", "uong", "com", "pho", "cafe", "tra sua"] },
+    { id: "transport", kw: ["xang", "grab", "taxi", "xe buyt", "gui xe"] },
+    { id: "education", kw: ["sach", "khoa hoc", "hoc phi", "luyen thi"] },
+    { id: "entertain", kw: ["netflix", "spotify", "game", "rap phim"] },
+    { id: "health", kw: ["thuoc", "kham", "vien phi", "nha thuoc"] },
+    { id: "shopping", kw: ["shopee", "lazada", "ao", "quan", "giay"] },
+    { id: "housing", kw: ["dien", "nuoc", "mang", "internet", "tien nha"] },
   ];
 
   for (const r of rules) {
     if (r.kw.some((k) => t.includes(k))) return r.id;
   }
-  return "khac";
+  return "other";
 };
 
 async function getApiKey() {
@@ -210,10 +210,10 @@ export default function AddScreen() {
         <View style={styles.field}>
           <Text style={styles.fieldLabel}>SỐ TIỀN</Text>
           <View style={styles.amountRow}>
-            <Text style={styles.amountCur}>₫</Text>
             <TextInput
               style={[
                 styles.amountInput,
+                { flex: 1, minWidth: 0 },
                 { color: type === "expense" ? COLORS.danger : COLORS.success },
               ]}
               value={
@@ -233,6 +233,9 @@ export default function AddScreen() {
               spellCheck={false}
               textContentType="none"
             />
+            <Text style={[styles.amountCur, { marginRight: 0, marginLeft: 8 }]}>
+              vnd
+            </Text>
           </View>
         </View>
 
@@ -255,7 +258,7 @@ export default function AddScreen() {
               value={note}
               onChangeText={setNote}
               onBlur={handleNoteBlur}
-              placeholder="Nhập ghi chú để AI tự phân loại..."
+              placeholder="Nhập ghi chú để trí tuệ nhân tạo tự phân loại..."
               placeholderTextColor={COLORS.textMuted}
             />
             <TouchableOpacity
@@ -266,7 +269,7 @@ export default function AddScreen() {
               {isClassifying ? (
                 <ActivityIndicator size="small" color={COLORS.accent} />
               ) : (
-                <Text style={styles.aiBtnText}>✨ AI</Text>
+                <Text style={styles.aiBtnText}>✨ Trí tuệ</Text>
               )}
             </TouchableOpacity>
           </View>

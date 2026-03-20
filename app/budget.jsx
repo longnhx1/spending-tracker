@@ -137,14 +137,14 @@ export default function BudgetScreen() {
           <View style={styles.overviewCard}>
             <Text style={styles.overviewLabel}>TỔNG NGÂN SÁCH</Text>
             <Text style={styles.overviewAmount}>
-              ₫{formatMoney(totalBudget)}
+              {formatMoney(totalBudget)} vnd
             </Text>
 
             <View style={styles.overviewRow}>
               <View>
                 <Text style={styles.overviewSub}>Đã chi</Text>
                 <Text style={[styles.overviewVal, { color: COLORS.danger }]}>
-                  ₫{formatMoney(totalSpent)}
+                  {formatMoney(totalSpent)} vnd
                 </Text>
               </View>
               <View>
@@ -160,7 +160,7 @@ export default function BudgetScreen() {
                     },
                   ]}
                 >
-                  ₫{formatMoney(Math.abs(totalBudget - totalSpent))}
+                  {formatMoney(Math.abs(totalBudget - totalSpent))} vnd
                 </Text>
               </View>
               <View>
@@ -217,7 +217,7 @@ export default function BudgetScreen() {
                       <Text style={styles.catName}>{cat.label}</Text>
                       {hasbudget ? (
                         <Text style={styles.catSub}>
-                          ₫{formatMoney(spent)} / ₫{formatMoney(budget.amount)}
+                          {formatMoney(spent)} vnd / {formatMoney(budget.amount)} vnd
                         </Text>
                       ) : (
                         <Text style={styles.catSubMuted}>
@@ -287,7 +287,7 @@ export default function BudgetScreen() {
                     Ngân sách — {selectedCat?.label}
                   </Text>
                   <Text style={styles.modalSub}>
-                    Đã chi: ₫{formatMoney(getSpent(selectedCat?.id || ""))}
+                    Đã chi: {formatMoney(getSpent(selectedCat?.id || ""))} vnd
                   </Text>
                 </View>
               </View>
@@ -331,9 +331,9 @@ export default function BudgetScreen() {
       {/* Bottom Nav */}
       <View style={styles.bottomNav}>
         {[
-          { icon: "🏠", label: "Home", route: "/" },
-          { icon: "📊", label: "Stats", route: "/stats" },
-          { icon: "➕", label: "Add", route: "/add" },
+          { icon: "🏠", label: "Trang chủ", route: "/" },
+          { icon: "📊", label: "Thống kê", route: "/stats" },
+          { icon: "➕", label: "Thêm", route: "/add" },
           { icon: "💳", label: "Nợ", route: "/debt" },
         ].map((item) => {
           const isActive = false;

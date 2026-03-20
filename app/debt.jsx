@@ -179,7 +179,7 @@ export default function DebtScreen() {
         {/* Tổng nợ */}
         <View style={styles.totalCard}>
           <Text style={styles.totalLabel}>TỔNG NỢ HIỆN TẠI</Text>
-          <Text style={styles.totalAmount}>₫{formatMoney(totalDebt)}</Text>
+          <Text style={styles.totalAmount}>{formatMoney(totalDebt)} vnd</Text>
           <Text style={styles.totalSub}>
             {debts.length} khoản nợ đang theo dõi
           </Text>
@@ -212,10 +212,10 @@ export default function DebtScreen() {
                   </View>
                   <View style={styles.debtRight}>
                     <Text style={styles.debtRemaining}>
-                      ₫{formatMoney(debt.remaining_amount)}
+                      {formatMoney(debt.remaining_amount)} vnd
                     </Text>
                     <Text style={styles.debtTotal}>
-                      / ₫{formatMoney(debt.total_amount)}
+                      / {formatMoney(debt.total_amount)} vnd
                     </Text>
                   </View>
                 </View>
@@ -413,7 +413,7 @@ export default function DebtScreen() {
                 Trả nợ — {selectedDebt?.name}
               </Text>
               <Text style={styles.modalSub}>
-                Còn lại: ₫{formatMoney(selectedDebt?.remaining_amount || 0)}
+                Còn lại: {formatMoney(selectedDebt?.remaining_amount || 0)} vnd
               </Text>
 
               <Text style={styles.inputLabel}>SỐ TIỀN TRẢ</Text>
@@ -454,9 +454,9 @@ export default function DebtScreen() {
       {/* Bottom Nav */}
       <View style={styles.bottomNav}>
         {[
-          { icon: "🏠", label: "Home", route: "/" },
-          { icon: "📊", label: "Stats", route: "/stats" },
-          { icon: "➕", label: "Add", route: "/add" },
+          { icon: "🏠", label: "Trang chủ", route: "/" },
+          { icon: "📊", label: "Thống kê", route: "/stats" },
+          { icon: "➕", label: "Thêm", route: "/add" },
           { icon: "💳", label: "Nợ", route: "/debt" },
         ].map((item) => {
           const isActive = item.route === "/debt";

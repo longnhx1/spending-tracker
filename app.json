@@ -11,6 +11,9 @@
     "plugins": [
       "expo-router",
       "expo-sqlite"
-    ]
+    ],
+    "android": {
+      "package": "com.anonymous.spendingtracker"
+    }
   }
 }

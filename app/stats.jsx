@@ -20,6 +20,13 @@ import * as Sharing from "expo-sharing";
 import styles from "../styles/statsStyles";
 
 const formatMoney = (amount) => Math.abs(amount).toLocaleString("vi-VN");
+const pad2 = (n) => String(n).padStart(2, "0");
+const formatCompactVnd = (value) => {
+  const n = Math.abs(Number(value) || 0);
+  if (n >= 1_000_000) return `${Math.round((n / 1_000_000) * 10) / 10}M`;
+  if (n >= 1_000) return `${Math.round(n / 1_000)}K`;
+  return `${Math.round(n)}`;
+};
 
 export default function StatsScreen() {
   const router = useRouter();
@@ -69,6 +76,33 @@ export default function StatsScreen() {
 
   const maxCatAmount = byCategory[0]?.total || 1;
 
+  // So sánh theo tuần trong tháng hiện tại (Tuần 1..4)
+  const [wy, wm] = currentMonth.split("-").map(Number);
+  const daysInMonth = new Date(wy, wm, 0).getDate();
+  const weekComparisons = [1, 2, 3, 4].map((week) => {
+    const startDay = (week - 1) * 7 + 1;
+    if (startDay > daysInMonth) {
+      return { week, weekIncome: 0, weekExpense: 0 };
+    }
+    const endDay = Math.min(daysInMonth, startDay + 6);
+    const startISO = `${currentMonth}-${pad2(startDay)}`;
+    const endISO = `${currentMonth}-${pad2(endDay)}`;
+
+    const weekTx = monthTx.filter((tx) => tx.date >= startISO && tx.date <= endISO);
+    const weekIncome = weekTx
+      .filter((tx) => tx.type === "income")
+      .reduce((sum, tx) => sum + tx.amount, 0);
+    const weekExpense = weekTx
+      .filter((tx) => tx.type === "expense")
+      .reduce((sum, tx) => sum + tx.amount, 0);
+
+    return { week, weekIncome, weekExpense };
+  });
+  const maxWeekValue = Math.max(
+    1,
+    ...weekComparisons.map((w) => Math.max(w.weekIncome, w.weekExpense)),
+  );
+
   // Điều hướng tháng
   const changeMonth = (direction) => {
     const [year, month] = currentMonth.split("-").map(Number);
@@ -94,7 +128,7 @@ export default function StatsScreen() {
   });
 
   const handleLongPress = (tx) => {
-    Alert.alert(tx.note || "Giao dịch", `₫${formatMoney(tx.amount)}`, [
+    Alert.alert(tx.note || "Giao dịch", `${formatMoney(tx.amount)} vnd`, [
       { text: "Huỷ", style: "cancel" },
       {
         text: "✏️ Sửa",
@@ -223,7 +257,7 @@ export default function StatsScreen() {
           >
             <Text style={styles.summaryLabel}>THU NHẬP</Text>
             <Text style={[styles.summaryAmount, { color: COLORS.success }]}>
-              +₫{formatMoney(income)}
+              +{formatMoney(income)} vnd
             </Text>
           </View>
           <View
@@ -234,7 +268,7 @@ export default function StatsScreen() {
           >
             <Text style={styles.summaryLabel}>CHI TIÊU</Text>
             <Text style={[styles.summaryAmount, { color: COLORS.danger }]}>
-              -₫{formatMoney(expense)}
+              -{formatMoney(expense)} vnd
             </Text>
           </View>
         </View>
@@ -248,7 +282,7 @@ export default function StatsScreen() {
               { color: balance >= 0 ? COLORS.success : COLORS.danger },
             ]}
           >
-            {balance >= 0 ? "+" : "-"}₫{formatMoney(balance)}
+            {balance >= 0 ? "+" : "-"}{formatMoney(balance)} vnd
           </Text>
           {expense > 0 && income > 0 && (
             <Text style={styles.balanceSub}>
@@ -275,7 +309,7 @@ export default function StatsScreen() {
                   <View>
                     <Text style={styles.catName}>{cat.label}</Text>
                     <Text style={styles.catAmount}>
-                      ₫{formatMoney(cat.total)}
+                      {formatMoney(cat.total)} vnd
                     </Text>
                   </View>
                 </View>
@@ -293,6 +327,35 @@ export default function StatsScreen() {
               </View>
             ))
           )}
+        </View>
+
+        {/* So sánh theo tuần */}
+        <View style={styles.section}>
+          <Text style={styles.weekCompareTitle}>SO SÁNH TUẦN</Text>
+          {weekComparisons.map((w) => {
+            const pctExpense = (w.weekExpense / maxWeekValue) * 100;
+            const pctIncome = (w.weekIncome / maxWeekValue) * 100;
+            return (
+              <View key={w.week} style={styles.weekRow}>
+                <Text style={styles.weekLabel}>{`Tuần ${w.week}`}</Text>
+                <View style={styles.weekBarTrack}>
+                  <View
+                    style={[
+                      styles.weekBarExpense,
+                      { width: `${pctExpense}%` },
+                    ]}
+                  />
+                  <View
+                    style={[
+                      styles.weekBarIncome,
+                      { width: `${pctIncome}%` },
+                    ]}
+                  />
+                </View>
+                <Text style={styles.weekValue}>{formatCompactVnd(w.weekExpense)}</Text>
+              </View>
+            );
+          })}
         </View>
 
         {/* Lịch sử giao dịch tháng này */}
@@ -335,7 +398,8 @@ export default function StatsScreen() {
                       },
                     ]}
                   >
-                    {tx.type === "income" ? "+" : "-"}₫{formatMoney(tx.amount)}
+                    {tx.type === "income" ? "+" : "-"}
+                    {formatMoney(tx.amount)} vnd
                   </Text>
                 </TouchableOpacity>
               );
@@ -480,7 +544,7 @@ export default function StatsScreen() {
               activeAction === "export" && styles.actionPillTxtActive,
             ]}
           >
-            Export
+              Xuất CSV
           </Text>
         </TouchableOpacity>
 
@@ -493,7 +557,7 @@ export default function StatsScreen() {
             setActiveAction("insights");
             Alert.alert(
               "Sắp ra mắt",
-              "Tính năng AI Insights đang được phát triển! 🚀",
+              "Tính năng Thông tin trí tuệ nhân tạo đang được phát triển! 🚀",
             );
           }}
         >
@@ -504,7 +568,7 @@ export default function StatsScreen() {
               activeAction === "insights" && styles.actionPillTxtActive,
             ]}
           >
-            AI Insights
+            Thông tin trí tuệ nhân tạo
           </Text>
         </TouchableOpacity>
 
@@ -536,9 +600,9 @@ export default function StatsScreen() {
       {/* Bottom Nav */}
       <View style={styles.bottomNav}>
         {[
-          { icon: "🏠", label: "Home", route: "/" },
-          { icon: "📊", label: "Stats", route: "/stats" },
-          { icon: "➕", label: "Add", route: "/add" },
+          { icon: "🏠", label: "Trang chủ", route: "/" },
+          { icon: "📊", label: "Thống kê", route: "/stats" },
+          { icon: "➕", label: "Thêm", route: "/add" },
           { icon: "💳", label: "Nợ", route: "/debt" },
         ].map((item) => {
           const isActive = item.route === "/stats";

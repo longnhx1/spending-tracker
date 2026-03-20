@@ -24,8 +24,15 @@ const formatMoney = (amount) => {
 
 // Hàm tìm emoji tương ứng với category id
 const getCategoryEmoji = (categoryId) => {
+  if (categoryId === "thu_nhap") return "💸";
   const cat = CATEGORIES.find((c) => c.id === categoryId);
   return cat ? cat.emoji : "📦";
+};
+
+const getCategoryLabel = (categoryId) => {
+  if (categoryId === "thu_nhap") return "Thu nhập";
+  const cat = CATEGORIES.find((c) => c.id === categoryId);
+  return cat ? cat.label : categoryId;
 };
 
 // Component chính: Màn hình Home hiển thị tổng quan tài chính
@@ -50,19 +57,6 @@ export default function HomeScreen() {
   return (
     <SafeAreaView style={styles.safe}>
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Header: Phần chào mừng và avatar người dùng */}
-        <View style={styles.header}>
-          <View>
-            <Text style={styles.greeting}>こんにちは</Text>
-            <Text style={styles.username}>お兄ちゃん</Text>
-          </View>
-          <View style={styles.avatarRing}>
-            <View style={styles.avatarInner}>
-              <Text style={styles.avatarText}>兄</Text>
-            </View>
-          </View>
-        </View>
-
         {/* Balance Card: Thẻ hiển thị số dư và tổng quan tài chính */}
         <View style={styles.heroCard}>
           <Text style={styles.heroLabel}>SỐ DƯ HIỆN TẠI</Text>
@@ -72,9 +66,8 @@ export default function HomeScreen() {
               { color: balance < 0 ? COLORS.danger : COLORS.textPrimary },
             ]}
           >
-            <Text style={styles.heroCur}>₫</Text>
             {balance < 0 ? "-" : ""}
-            {formatMoney(Math.abs(balance))}
+            {formatMoney(Math.abs(balance))} vnd
           </Text>
           <Text style={styles.heroSub}>
             Tháng {new Date().getMonth() + 1} · {new Date().getFullYear()}
@@ -85,19 +78,19 @@ export default function HomeScreen() {
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>THU</Text>
               <Text style={[styles.pillVal, { color: COLORS.success }]}>
-                +{formatMoney(income)}
+                +{formatMoney(income)} vnd
               </Text>
             </View>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>CHI</Text>
               <Text style={[styles.pillVal, { color: COLORS.danger }]}>
-                -{formatMoney(expense)}
+                -{formatMoney(expense)} vnd
               </Text>
             </View>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>NỢ</Text>
               <Text style={[styles.pillVal, { color: COLORS.danger }]}>
-                {formatMoney(totalDebt)}
+                {formatMoney(totalDebt)} vnd
               </Text>
             </View>
           </View>
@@ -147,9 +140,11 @@ export default function HomeScreen() {
                 </Text>
               </View>
               <View style={styles.txInfo}>
-                <Text style={styles.txName}>{tx.note || tx.category}</Text>
+                <Text style={styles.txName}>
+                  {tx.note || getCategoryLabel(tx.category)}
+                </Text>
                 <Text style={styles.txMeta}>
-                  {tx.category} · {tx.date}
+                  {getCategoryLabel(tx.category)} · {tx.date}
                 </Text>
               </View>
               <Text
@@ -162,7 +157,7 @@ export default function HomeScreen() {
                 ]}
               >
                 {tx.type === "income" ? "+" : "-"}
-                {formatMoney(tx.amount)}
+                {formatMoney(tx.amount)} vnd
               </Text>
             </View>
           ))
@@ -175,9 +170,9 @@ export default function HomeScreen() {
       {/* Bottom Navigation: Thanh điều hướng dưới cùng */}
       <View style={styles.bottomNav}>
         {[
-          { icon: "🏠", label: "Home", route: "/" },
-          { icon: "📊", label: "Stats", route: "/stats" },
-          { icon: "➕", label: "Add", route: "/add" },
+          { icon: "🏠", label: "Trang chủ", route: "/" },
+          { icon: "📊", label: "Thống kê", route: "/stats" },
+          { icon: "➕", label: "Thêm", route: "/add" },
           { icon: "💳", label: "Nợ", route: "/debt" },
         ].map((item) => {
           const isActive = item.route === "/";
