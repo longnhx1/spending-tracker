@@ -1,5 +1,6 @@
 // database/db.js
 import * as SQLite from 'expo-sqlite';
+import { CATEGORIES } from '../constants/theme';
 
 const db = SQLite.openDatabaseSync('spending.db');
 let dbAsyncPromise = null;
@@ -35,6 +36,22 @@ export const initDatabase = () => {
       created_at TEXT DEFAULT (datetime('now'))
     );
   `);
+
+  db.execSync(`
+    CREATE TABLE IF NOT EXISTS categories (
+      id TEXT PRIMARY KEY,
+      label TEXT NOT NULL,
+      emoji TEXT NOT NULL
+    );
+  `);
+
+  // Seed mặc định (không trùng do dùng INSERT OR IGNORE)
+  for (const cat of CATEGORIES) {
+    db.runSync(
+      "INSERT OR IGNORE INTO categories (id, label, emoji) VALUES (?, ?, ?)",
+      [cat.id, cat.label, cat.emoji],
+    );
+  }
 };
 
 // Thêm giao dịch mới
@@ -95,6 +112,28 @@ export const deleteTransaction = async (id) => {
     'DELETE FROM transactions WHERE id = ?',
     [id]
   );
+};
+
+// ── Categories (danh mục chi tiêu) ─────────────────────────────
+export const getCategories = () => {
+  return db.getAllSync(
+    'SELECT id, label, emoji FROM categories ORDER BY rowid ASC',
+  );
+};
+
+export const upsertCategory = (id, label, emoji) => {
+  return db.runSync(
+    `INSERT INTO categories (id, label, emoji)
+     VALUES (?, ?, ?)
+     ON CONFLICT(id) DO UPDATE SET
+       label = excluded.label,
+       emoji = excluded.emoji`,
+    [id, label, emoji],
+  );
+};
+
+export const deleteCategory = (id) => {
+  return db.runSync('DELETE FROM categories WHERE id = ?', [id]);
 };
 
 export default db;

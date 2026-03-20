@@ -13,11 +13,10 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS, CATEGORIES } from "../constants/theme";
 import useStore from "../store/useStore";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
-import styles from "../styles/statsStyles";
+import makeStatsStyles from "../styles/statsStyles";
 
 const formatMoney = (amount) => Math.abs(amount).toLocaleString("vi-VN");
 const pad2 = (n) => String(n).padStart(2, "0");
@@ -34,6 +33,9 @@ export default function StatsScreen() {
   const loadTransactions = useStore((state) => state.loadTransactions);
   const updateTransaction = useStore((state) => state.updateTransaction);
   const deleteTransaction = useStore((state) => state.deleteTransaction);
+  const colors = useStore((state) => state.colors);
+  const styles = makeStatsStyles(colors);
+  const categories = useStore((state) => state.categories);
 
   const [showEditModal, setShowEditModal] = useState(false);
   const [editingTx, setEditingTx] = useState(null);
@@ -65,7 +67,7 @@ export default function StatsScreen() {
   const balance = income - expense;
 
   // Tính chi tiêu theo danh mục
-  const byCategory = CATEGORIES.map((cat) => {
+  const byCategory = categories.map((cat) => {
     const total = monthTx
       .filter((tx) => tx.type === "expense" && tx.category === cat.id)
       .reduce((sum, tx) => sum + tx.amount, 0);
@@ -181,7 +183,7 @@ export default function StatsScreen() {
       .map((tx) => {
         const type = tx.type === "income" ? "Thu nhập" : "Chi tiêu";
         const cat =
-          CATEGORIES.find((c) => c.id === tx.category)?.label || tx.category;
+          categories.find((c) => c.id === tx.category)?.label || tx.category;
         const note = tx.note ? `"${tx.note.replace(/"/g, '""')}"` : "";
         return `${tx.date},${type},${cat},${note},${tx.amount}`;
       })
@@ -256,7 +258,7 @@ export default function StatsScreen() {
             style={[styles.summaryCard, { borderColor: "rgba(0,229,160,0.2)" }]}
           >
             <Text style={styles.summaryLabel}>THU NHẬP</Text>
-            <Text style={[styles.summaryAmount, { color: COLORS.success }]}>
+            <Text style={[styles.summaryAmount, { color: colors.success }]}>
               +{formatMoney(income)} vnd
             </Text>
           </View>
@@ -267,7 +269,7 @@ export default function StatsScreen() {
             ]}
           >
             <Text style={styles.summaryLabel}>CHI TIÊU</Text>
-            <Text style={[styles.summaryAmount, { color: COLORS.danger }]}>
+            <Text style={[styles.summaryAmount, { color: colors.danger }]}>
               -{formatMoney(expense)} vnd
             </Text>
           </View>
@@ -279,7 +281,7 @@ export default function StatsScreen() {
           <Text
             style={[
               styles.balanceAmount,
-              { color: balance >= 0 ? COLORS.success : COLORS.danger },
+              { color: balance >= 0 ? colors.success : colors.danger },
             ]}
           >
             {balance >= 0 ? "+" : "-"}{formatMoney(balance)} vnd
@@ -370,7 +372,7 @@ export default function StatsScreen() {
             </View>
           ) : (
             monthTx.map((tx) => {
-              const cat = CATEGORIES.find((c) => c.id === tx.category);
+              const cat = categories.find((c) => c.id === tx.category);
               return (
                 <TouchableOpacity
                   key={tx.id}
@@ -394,7 +396,7 @@ export default function StatsScreen() {
                       styles.txAmount,
                       {
                         color:
-                          tx.type === "income" ? COLORS.success : COLORS.danger,
+                          tx.type === "income" ? colors.success : colors.danger,
                       },
                     ]}
                   >
@@ -431,7 +433,7 @@ export default function StatsScreen() {
                   <Text
                     style={[
                       styles.togText,
-                      editType === "expense" && { color: COLORS.danger },
+                      editType === "expense" && { color: colors.danger },
                     ]}
                   >
                     Chi tiêu
@@ -447,7 +449,7 @@ export default function StatsScreen() {
                   <Text
                     style={[
                       styles.togText,
-                      editType === "income" && { color: COLORS.success },
+                      editType === "income" && { color: colors.success },
                     ]}
                   >
                     Thu nhập
@@ -467,7 +469,7 @@ export default function StatsScreen() {
                 }
                 onChangeText={(text) => setEditAmount(text.replace(/\./g, ""))}
                 keyboardType="numeric"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.inputLabel}>GHI CHÚ</Text>
@@ -475,14 +477,14 @@ export default function StatsScreen() {
                 style={styles.input}
                 value={editNote}
                 onChangeText={setEditNote}
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               {editType === "expense" && (
                 <>
                   <Text style={styles.inputLabel}>DANH MỤC</Text>
                   <View style={styles.catGrid}>
-                    {CATEGORIES.map((cat) => (
+                    {categories.map((cat) => (
                       <TouchableOpacity
                         key={cat.id}
                         style={[
@@ -495,7 +497,7 @@ export default function StatsScreen() {
                         <Text
                           style={[
                             styles.catName,
-                            editCategory === cat.id && { color: COLORS.danger },
+                            editCategory === cat.id && { color: colors.danger },
                           ]}
                         >
                           {cat.label}
@@ -610,7 +612,10 @@ export default function StatsScreen() {
             <TouchableOpacity
               key={item.label}
               style={styles.navItem}
-              onPress={() => router.push(item.route)}
+              onPress={() => {
+                if (isActive) return;
+                router.push(item.route);
+              }}
             >
               <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
                 {item.icon}

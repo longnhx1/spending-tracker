@@ -1,6 +1,4 @@
 // app/index.jsx
-
-// Import các thư viện cần thiết từ React Native và Expo
 import { useEffect } from "react";
 import {
   View,
@@ -11,59 +9,62 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import styles from "../styles/homeStyles";
+import makeHomeStyles from "../styles/homeStyles";
 
-// Import các constants và store từ project
-import { COLORS, CATEGORIES } from "../constants/theme";
 import useStore from "../store/useStore";
 
-// Hàm format số tiền: chuyển số thành chuỗi có dấu chấm ngăn cách (VD: 2450000 → "2.450.000")
 const formatMoney = (amount) => {
   return Math.abs(amount).toLocaleString("vi-VN");
 };
 
-// Hàm tìm emoji tương ứng với category id
-const getCategoryEmoji = (categoryId) => {
-  if (categoryId === "thu_nhap") return "💸";
-  const cat = CATEGORIES.find((c) => c.id === categoryId);
-  return cat ? cat.emoji : "📦";
-};
-
-const getCategoryLabel = (categoryId) => {
-  if (categoryId === "thu_nhap") return "Thu nhập";
-  const cat = CATEGORIES.find((c) => c.id === categoryId);
-  return cat ? cat.label : categoryId;
-};
-
-// Component chính: Màn hình Home hiển thị tổng quan tài chính
 export default function HomeScreen() {
-  // Khởi tạo router để điều hướng
   const router = useRouter();
+  const colors = useStore((s) => s.colors);
+  const styles = makeHomeStyles(colors);
+  const categories = useStore((s) => s.categories);
 
-  // Lấy dữ liệu từ Zustand store
   const transactions = useStore((state) => state.transactions);
   const debts = useStore((state) => state.debts);
   const getMonthlySummary = useStore((state) => state.getMonthlySummary);
+  const headerStyles = makeHeaderStyles(colors);
 
-  // Tính toán tổng thu, chi, và số dư trong tháng hiện tại
+  const getCategoryEmoji = (categoryId) => {
+    if (categoryId === "thu_nhap") return "💸";
+    const cat = categories.find((c) => c.id === categoryId);
+    return cat ? cat.emoji : "📦";
+  };
+
+  const getCategoryLabel = (categoryId) => {
+    if (categoryId === "thu_nhap") return "Thu nhập";
+    const cat = categories.find((c) => c.id === categoryId);
+    return cat ? cat.label : categoryId;
+  };
+
   const { income, expense, balance } = getMonthlySummary();
-
-  // Chỉ lấy 5 giao dịch gần nhất để hiển thị
   const recentTx = transactions.slice(0, 5);
-
-  // Tính tổng số nợ còn lại
   const totalDebt = debts.reduce((sum, d) => sum + d.remaining_amount, 0);
 
   return (
     <SafeAreaView style={styles.safe}>
+      {/* ── Header với nút Settings ── */}
+      <View style={headerStyles.header}>
+        <Text style={headerStyles.appName}>SpendingTracker</Text>
+        <TouchableOpacity
+          style={headerStyles.settingsBtn}
+          onPress={() => router.push("/settings")}
+        >
+          <Text style={headerStyles.settingsIcon}>⚙️</Text>
+        </TouchableOpacity>
+      </View>
+
       <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        {/* Balance Card: Thẻ hiển thị số dư và tổng quan tài chính */}
+        {/* Balance Card */}
         <View style={styles.heroCard}>
           <Text style={styles.heroLabel}>SỐ DƯ HIỆN TẠI</Text>
           <Text
             style={[
               styles.heroAmount,
-              { color: balance < 0 ? COLORS.danger : COLORS.textPrimary },
+              { color: balance < 0 ? colors.danger : colors.textPrimary },
             ]}
           >
             {balance < 0 ? "-" : ""}
@@ -73,30 +74,29 @@ export default function HomeScreen() {
             Tháng {new Date().getMonth() + 1} · {new Date().getFullYear()}
           </Text>
 
-          {/* Các pill hiển thị thu, chi, nợ */}
           <View style={styles.pillRow}>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>THU</Text>
-              <Text style={[styles.pillVal, { color: COLORS.success }]}>
+              <Text style={[styles.pillVal, { color: colors.success }]}>
                 +{formatMoney(income)} vnd
               </Text>
             </View>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>CHI</Text>
-              <Text style={[styles.pillVal, { color: COLORS.danger }]}>
+              <Text style={[styles.pillVal, { color: colors.danger }]}>
                 -{formatMoney(expense)} vnd
               </Text>
             </View>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>NỢ</Text>
-              <Text style={[styles.pillVal, { color: COLORS.danger }]}>
+              <Text style={[styles.pillVal, { color: colors.danger }]}>
                 {formatMoney(totalDebt)} vnd
               </Text>
             </View>
           </View>
         </View>
 
-        {/* Quick Actions: Các nút hành động nhanh */}
+        {/* Quick Actions */}
         <View style={styles.qaRow}>
           {[
             { icon: "➕", label: "Thêm", route: "/add" },
@@ -115,7 +115,7 @@ export default function HomeScreen() {
           ))}
         </View>
 
-        {/* Recent Transactions: Phần hiển thị giao dịch gần đây */}
+        {/* Recent Transactions */}
         <View style={styles.secHead}>
           <Text style={styles.secTitle}>Gần đây</Text>
           <TouchableOpacity onPress={() => router.push("/stats")}>
@@ -123,7 +123,6 @@ export default function HomeScreen() {
           </TouchableOpacity>
         </View>
 
-        {/* Hiển thị danh sách giao dịch hoặc thông báo trống */}
         {recentTx.length === 0 ? (
           <View style={styles.emptyBox}>
             <Text style={styles.emptyText}>
@@ -152,7 +151,7 @@ export default function HomeScreen() {
                   styles.txAmount,
                   {
                     color:
-                      tx.type === "income" ? COLORS.success : COLORS.danger,
+                      tx.type === "income" ? colors.success : colors.danger,
                   },
                 ]}
               >
@@ -163,11 +162,10 @@ export default function HomeScreen() {
           ))
         )}
 
-        {/* Khoảng trống để tránh bị che bởi bottom nav */}
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      {/* Bottom Navigation: Thanh điều hướng dưới cùng */}
+      {/* Bottom Navigation */}
       <View style={styles.bottomNav}>
         {[
           { icon: "🏠", label: "Trang chủ", route: "/" },
@@ -180,7 +178,10 @@ export default function HomeScreen() {
             <TouchableOpacity
               key={item.label}
               style={styles.navItem}
-              onPress={() => router.push(item.route)}
+              onPress={() => {
+                if (isActive) return;
+                router.push(item.route);
+              }}
             >
               <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
                 {item.icon}
@@ -198,3 +199,31 @@ export default function HomeScreen() {
     </SafeAreaView>
   );
 }
+
+// Style riêng cho header (để dùng đúng mode theme hiện tại)
+const makeHeaderStyles = (colors) =>
+  StyleSheet.create({
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      justifyContent: "space-between",
+      paddingHorizontal: 20,
+      paddingVertical: 12,
+    },
+    appName: {
+      fontSize: 18,
+      fontFamily: "BeVietnamPro_700Bold",
+      color: colors.textPrimary,
+    },
+    settingsBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: colors.surface2 || colors.gray1,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    settingsIcon: {
+      fontSize: 20,
+    },
+  });

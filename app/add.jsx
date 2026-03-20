@@ -13,9 +13,8 @@ import AsyncStorage from "@react-native-async-storage/async-storage";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
 
-import { COLORS, CATEGORIES } from "../constants/theme";
 import useStore from "../store/useStore";
-import styles from "../styles/addStyles";
+import makeAddStyles from "../styles/addStyles";
 
 const formatMoney = (amount) => {
   const n = Number.isFinite(amount) ? amount : 0;
@@ -35,7 +34,7 @@ const normalize = (s) =>
     .replace(/[\u0300-\u036f]/g, "")
     .trim();
 
-const localClassify = (note) => {
+const localClassify = (note, validIds) => {
   const t = normalize(note);
   if (!t) return null;
 
@@ -50,9 +49,12 @@ const localClassify = (note) => {
   ];
 
   for (const r of rules) {
-    if (r.kw.some((k) => t.includes(k))) return r.id;
+    if (r.kw.some((k) => t.includes(k))) {
+      return validIds.has(r.id) ? r.id : null;
+    }
   }
-  return "other";
+  if (validIds.has("other")) return "other";
+  return validIds.values().next().value || null;
 };
 
 async function getApiKey() {
@@ -64,14 +66,14 @@ async function getApiKey() {
   return "";
 }
 
-async function classifyWithAI(note) {
+async function classifyWithAI(note, categories) {
   const key = await getApiKey();
   if (!key) return null;
 
   const prompt = [
     "Bạn là bộ phân loại danh mục chi tiêu.",
     "Trả về DUY NHẤT 1 id danh mục trong danh sách hợp lệ, không kèm giải thích.",
-    `Danh mục hợp lệ: ${CATEGORIES.map((c) => c.id).join(", ")}.`,
+    `Danh mục hợp lệ: ${categories.map((c) => c.id).join(", ")}.`,
     `Ghi chú: "${note}".`,
     "Trả về 1 id.",
   ].join("\n");
@@ -98,12 +100,15 @@ async function classifyWithAI(note) {
     data?.candidates?.[0]?.content?.parts?.[0]?.text ||
     "";
   const candidate = out.split(/\s+/)[0].trim();
-  return CATEGORIES.some((c) => c.id === candidate) ? candidate : null;
+  return categories.some((c) => c.id === candidate) ? candidate : null;
 }
 
 export default function AddScreen() {
   const router = useRouter();
   const addTransaction = useStore((s) => s.addTransaction);
+  const colors = useStore((s) => s.colors);
+  const styles = makeAddStyles(colors);
+  const categories = useStore((s) => s.categories);
 
   const [type, setType] = useState("expense"); // 'expense' | 'income'
   const [amount, setAmount] = useState("");
@@ -123,12 +128,13 @@ export default function AddScreen() {
     const raw = (note || "").trim();
     if (!raw) return;
 
+    const validIds = new Set(categories.map((c) => c.id));
     setIsClassifying(true);
     try {
-      const ai = (await classifyWithAI(raw)) || localClassify(raw);
+      const ai = (await classifyWithAI(raw, categories)) || localClassify(raw, validIds);
       if (ai) setCategory(ai);
     } catch (_e) {
-      const fallback = localClassify(raw);
+      const fallback = localClassify(raw, validIds);
       if (fallback) setCategory(fallback);
     } finally {
       setIsClassifying(false);
@@ -214,7 +220,7 @@ export default function AddScreen() {
               style={[
                 styles.amountInput,
                 { flex: 1, minWidth: 0 },
-                { color: type === "expense" ? COLORS.danger : COLORS.success },
+                { color: type === "expense" ? colors.danger : colors.success },
               ]}
               value={
                 amount
@@ -226,7 +232,7 @@ export default function AddScreen() {
                 if (!isNaN(raw)) setAmount(raw);
               }}
               placeholder="0"
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={colors.textMuted}
               keyboardType="numeric"
               autoCorrect={false}
               autoComplete="off"
@@ -246,7 +252,7 @@ export default function AddScreen() {
             value={date}
             onChangeText={setDate}
             placeholder="YYYY-MM-DD"
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor={colors.textMuted}
           />
         </View>
 
@@ -259,7 +265,7 @@ export default function AddScreen() {
               onChangeText={setNote}
               onBlur={handleNoteBlur}
               placeholder="Nhập ghi chú để trí tuệ nhân tạo tự phân loại..."
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={colors.textMuted}
             />
             <TouchableOpacity
               style={styles.aiBtn}
@@ -267,7 +273,7 @@ export default function AddScreen() {
               disabled={isClassifying}
             >
               {isClassifying ? (
-                <ActivityIndicator size="small" color={COLORS.accent} />
+                <ActivityIndicator size="small" color={colors.accent} />
               ) : (
                 <Text style={styles.aiBtnText}>✨ Trí tuệ</Text>
               )}
@@ -279,7 +285,7 @@ export default function AddScreen() {
           <View style={styles.field}>
             <Text style={styles.fieldLabel}>DANH MỤC</Text>
             <View style={styles.catGrid}>
-              {CATEGORIES.map((cat) => {
+              {categories.map((cat) => {
                 const active = category === cat.id;
                 return (
                   <TouchableOpacity

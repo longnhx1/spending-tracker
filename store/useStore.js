@@ -10,6 +10,9 @@ import {
     getTransactionsByMonth,
     updateTransaction,
     deleteTransaction,
+    getCategories,
+    upsertCategory,
+    deleteCategory,
 } from '../database/db';
 
 const useStore = create((set, get) => ({
@@ -25,6 +28,7 @@ const useStore = create((set, get) => ({
     // State
     transactions: [],
     debts: [],
+    categories: [],
     currentMonth: new Date().toISOString().slice(0, 7), // "2026-03"
 
     // Load dữ liệu từ database
@@ -36,6 +40,11 @@ const useStore = create((set, get) => ({
     loadDebts: () => {
         const data = getDebts();
         set({ debts: data });
+    },
+
+    loadCategories: () => {
+        const data = getCategories();
+        set({ categories: data });
     },
 
     // Thêm giao dịch mới
@@ -64,6 +73,22 @@ const useStore = create((set, get) => ({
     deleteTransaction: async (id) => {
         await deleteTransaction(id);
         await get().loadTransactions();
+    },
+
+    // ── Categories (danh mục chi tiêu) ─────────────────────────
+    addCategory: (id, label, emoji) => {
+        upsertCategory(id, label, emoji);
+        get().loadCategories();
+    },
+
+    updateCategory: (id, label, emoji) => {
+        upsertCategory(id, label, emoji);
+        get().loadCategories();
+    },
+
+    deleteCategory: (id) => {
+        deleteCategory(id);
+        get().loadCategories();
     },
 
     // Tính tổng thu/chi trong tháng hiện tại

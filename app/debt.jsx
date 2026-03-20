@@ -13,10 +13,9 @@ import {
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { COLORS } from "../constants/theme";
 import dbSync, { getDb } from "../database/db";
 import useStore from "../store/useStore";
-import styles from "../styles/debtStyles";
+import makeDebtStyles from "../styles/debtStyles";
 
 export default function DebtScreen() {
   const router = useRouter();
@@ -24,6 +23,8 @@ export default function DebtScreen() {
   const addDebt = useStore((state) => state.addDebt);
   const updateDebtRemaining = useStore((state) => state.updateDebtRemaining);
   const loadDebts = useStore((state) => state.loadDebts);
+  const colors = useStore((state) => state.colors);
+  const styles = makeDebtStyles(colors);
 
   const [showAddModal, setShowAddModal] = useState(false);
   const [showPayModal, setShowPayModal] = useState(false);
@@ -226,7 +227,7 @@ export default function DebtScreen() {
                     style={[
                       styles.progressFill,
                       { width: `${progress}%` },
-                      isPaid && { backgroundColor: COLORS.success },
+                      isPaid && { backgroundColor: colors.success },
                     ]}
                   />
                 </View>
@@ -293,7 +294,7 @@ export default function DebtScreen() {
                 value={newName}
                 onChangeText={setNewName}
                 placeholder="VD: ZaloPay, MoMo, bạn bè..."
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.inputLabel}>SỐ TIỀN NỢ</Text>
@@ -309,7 +310,7 @@ export default function DebtScreen() {
                 onChangeText={(text) => setNewAmount(getRawNumber(text))}
                 keyboardType="numeric"
                 placeholder="VD: 1.200.000"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.inputLabel}>HẠN TRẢ (tuỳ chọn)</Text>
@@ -318,7 +319,7 @@ export default function DebtScreen() {
                 value={newDueDate}
                 onChangeText={setNewDueDate}
                 placeholder="VD: 2026-04-30"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <View style={styles.modalBtns}>
@@ -355,7 +356,7 @@ export default function DebtScreen() {
                 style={styles.input}
                 value={editName}
                 onChangeText={setEditName}
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.inputLabel}>TỔNG SỐ TIỀN NỢ</Text>
@@ -370,7 +371,7 @@ export default function DebtScreen() {
                 }
                 onChangeText={(text) => setEditAmount(getRawNumber(text))}
                 keyboardType="numeric"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <Text style={styles.inputLabel}>HẠN TRẢ (tuỳ chọn)</Text>
@@ -379,7 +380,7 @@ export default function DebtScreen() {
                 value={editDueDate}
                 onChangeText={setEditDueDate}
                 placeholder="VD: 2026-04-30"
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <View style={styles.modalBtns}>
@@ -429,7 +430,7 @@ export default function DebtScreen() {
                 onChangeText={(text) => setPayAmount(getRawNumber(text))}
                 keyboardType="numeric"
                 placeholder="Nhập số tiền vừa trả..."
-                placeholderTextColor={COLORS.textMuted}
+                placeholderTextColor={colors.textMuted}
               />
 
               <View style={styles.modalBtns}>
@@ -464,7 +465,10 @@ export default function DebtScreen() {
             <TouchableOpacity
               key={item.label}
               style={styles.navItem}
-              onPress={() => router.push(item.route)}
+              onPress={() => {
+                if (isActive) return;
+                router.push(item.route);
+              }}
             >
               <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
                 {item.icon}
