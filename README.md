@@ -48,7 +48,7 @@ Do ứng dụng hiện tại đang trong giai đoạn phát triển và chưa đ
 
 | Màn hình chính | Thêm giao dịch | Thống kê | Quản lý vay/nợ |
 | :---: | :---: | :---: | :---: |
-| ![Home](link_anh_home) | ![Add](link_anh_add) | ![Stats](link_anh_stats) | ![Debt](link_anh_debt) |
+| ![Home](assets/screenshots/IMG_0277.PNG) | ![Add](/assets/screenshots/IMG_0279.PNG) | ![Stats](/assets/screenshots/IMG_0278.PNG) | ![Debt](/assets/screenshots/IMG_0283.PNG) |
 
 ---
 
