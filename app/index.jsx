@@ -8,6 +8,8 @@ import {
   StyleSheet,
   Modal,
   TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -41,13 +43,23 @@ export default function HomeScreen() {
   const prevMonth = new Date(y, m - 2, 1); // m-1 (JS: month 0-based)
   const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
 
-  const currTx = transactions.filter((tx) => tx.date.startsWith(currentMonthStr));
+  const currTx = transactions.filter((tx) =>
+    tx.date.startsWith(currentMonthStr),
+  );
   const prevTx = transactions.filter((tx) => tx.date.startsWith(prevMonthStr));
 
-  const currIncome = currTx.filter((tx) => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-  const currExpense = currTx.filter((tx) => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
-  const prevIncome = prevTx.filter((tx) => tx.type === "income").reduce((sum, tx) => sum + tx.amount, 0);
-  const prevExpense = prevTx.filter((tx) => tx.type === "expense").reduce((sum, tx) => sum + tx.amount, 0);
+  const currIncome = currTx
+    .filter((tx) => tx.type === "income")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const currExpense = currTx
+    .filter((tx) => tx.type === "expense")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const prevIncome = prevTx
+    .filter((tx) => tx.type === "income")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const prevExpense = prevTx
+    .filter((tx) => tx.type === "expense")
+    .reduce((sum, tx) => sum + tx.amount, 0);
 
   const currBalance = currIncome - currExpense;
   const prevBalance = prevIncome - prevExpense;
@@ -107,7 +119,9 @@ export default function HomeScreen() {
         <View style={styles.heroCard}>
           <Text style={styles.heroLabel}>SỐ DƯ HIỆN TẠI</Text>
           <View style={styles.heroAmountRow}>
-            <Text style={styles.heroAmount}>{formatMoneyHero(Math.abs(balance))}</Text>
+            <Text style={styles.heroAmount}>
+              {formatMoneyHero(Math.abs(balance))}
+            </Text>
             <Text style={styles.heroCur}>đ</Text>
           </View>
           <Text
@@ -142,10 +156,19 @@ export default function HomeScreen() {
         </View>
 
         {/* Goal shortcut row */}
-        <TouchableOpacity style={styles.addRow} onPress={() => setShowGoalModal(true)}>
+        <TouchableOpacity
+          style={styles.addRow}
+          onPress={() => setShowGoalModal(true)}
+        >
           <View style={styles.addRowLeft}>
             <View style={styles.addRowIcon}>
-              <Text style={{ fontSize: 18, color: colors.accent, fontWeight: "800" }}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  color: colors.accent,
+                  fontWeight: "800",
+                }}
+              >
                 🎯
               </Text>
             </View>
@@ -164,7 +187,8 @@ export default function HomeScreen() {
                 <Text style={styles.goalMeta}>Mục tiêu mua sắm</Text>
               </View>
               <Text style={styles.goalAmount}>
-                {formatMoney(topGoal.savedAmount)} / {formatMoney(topGoal.targetAmount)}
+                {formatMoney(topGoal.savedAmount)} /{" "}
+                {formatMoney(topGoal.targetAmount)}
               </Text>
             </View>
             <View style={styles.goalTrack}>
@@ -174,7 +198,11 @@ export default function HomeScreen() {
                   {
                     width: `${Math.min(
                       100,
-                      Math.round((topGoal.savedAmount / Math.max(1, topGoal.targetAmount)) * 100),
+                      Math.round(
+                        (topGoal.savedAmount /
+                          Math.max(1, topGoal.targetAmount)) *
+                          100,
+                      ),
                     )}%`,
                   },
                 ]}
@@ -184,7 +212,10 @@ export default function HomeScreen() {
               <Text style={styles.goalPercent}>
                 {Math.min(
                   100,
-                  Math.round((topGoal.savedAmount / Math.max(1, topGoal.targetAmount)) * 100),
+                  Math.round(
+                    (topGoal.savedAmount / Math.max(1, topGoal.targetAmount)) *
+                      100,
+                  ),
                 )}
                 %
               </Text>
@@ -238,7 +269,10 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                {formatMoney(tx.type === "income" ? tx.amount : -tx.amount, "signed")}
+                {formatMoney(
+                  tx.type === "income" ? tx.amount : -tx.amount,
+                  "signed",
+                )}
               </Text>
             </View>
           ))
@@ -250,78 +284,100 @@ export default function HomeScreen() {
       <NavBar activeRoute="/" />
 
       <Modal visible={showGoalModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Đặt mục tiêu mua sắm</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={goalTitle}
-              onChangeText={setGoalTitle}
-              placeholder="Tên món đồ (VD: iPad, xe máy...)"
-              placeholderTextColor={colors.text3}
-            />
-            <TextInput
-              style={styles.modalInput}
-              value={goalTarget}
-              onChangeText={(v) => setGoalTarget(v.replace(/[^\d]/g, ""))}
-              placeholder="Số tiền mục tiêu"
-              keyboardType="numeric"
-              placeholderTextColor={colors.text3}
-            />
-            <TextInput
-              style={styles.modalInput}
-              value={goalSaved}
-              onChangeText={(v) => setGoalSaved(v.replace(/[^\d]/g, ""))}
-              placeholder="Đã để dành (tuỳ chọn)"
-              keyboardType="numeric"
-              placeholderTextColor={colors.text3}
-            />
-            <View style={styles.modalRow}>
-              <TouchableOpacity
-                style={styles.modalBtn}
-                onPress={() => setShowGoalModal(false)}
-              >
-                <Text style={styles.modalBtnText}>Huỷ</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnPrimary]}
-                onPress={saveGoal}
-              >
-                <Text style={[styles.modalBtnText, styles.modalBtnTextPrimary]}>Lưu</Text>
-              </TouchableOpacity>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Đặt mục tiêu mua sắm</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={goalTitle}
+                onChangeText={setGoalTitle}
+                placeholder="Tên món đồ (VD: iPad, xe máy...)"
+                placeholderTextColor={colors.text3}
+              />
+              <TextInput
+                style={styles.modalInput}
+                value={goalTarget}
+                onChangeText={(v) => setGoalTarget(v.replace(/[^\d]/g, ""))}
+                placeholder="Số tiền mục tiêu"
+                keyboardType="numeric"
+                placeholderTextColor={colors.text3}
+              />
+              <TextInput
+                style={styles.modalInput}
+                value={goalSaved}
+                onChangeText={(v) => setGoalSaved(v.replace(/[^\d]/g, ""))}
+                placeholder="Đã để dành (tuỳ chọn)"
+                keyboardType="numeric"
+                placeholderTextColor={colors.text3}
+              />
+              <View style={styles.modalRow}>
+                <TouchableOpacity
+                  style={styles.modalBtn}
+                  onPress={() => setShowGoalModal(false)}
+                >
+                  <Text style={styles.modalBtnText}>Huỷ</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnPrimary]}
+                  onPress={saveGoal}
+                >
+                  <Text
+                    style={[styles.modalBtnText, styles.modalBtnTextPrimary]}
+                  >
+                    Lưu
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
 
       <Modal visible={showProgressModal} transparent animationType="slide">
-        <View style={styles.modalOverlay}>
-          <View style={styles.modalBox}>
-            <Text style={styles.modalTitle}>Nạp thêm cho mục tiêu</Text>
-            <TextInput
-              style={styles.modalInput}
-              value={goalProgressInput}
-              onChangeText={(v) => setGoalProgressInput(v.replace(/[^\d]/g, ""))}
-              placeholder="Số tiền vừa để dành"
-              keyboardType="numeric"
-              placeholderTextColor={colors.text3}
-            />
-            <View style={styles.modalRow}>
-              <TouchableOpacity
-                style={styles.modalBtn}
-                onPress={() => setShowProgressModal(false)}
-              >
-                <Text style={styles.modalBtnText}>Huỷ</Text>
-              </TouchableOpacity>
-              <TouchableOpacity
-                style={[styles.modalBtn, styles.modalBtnPrimary]}
-                onPress={saveGoalProgress}
-              >
-                <Text style={[styles.modalBtnText, styles.modalBtnTextPrimary]}>Cập nhật</Text>
-              </TouchableOpacity>
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Nạp thêm cho mục tiêu</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={goalProgressInput}
+                onChangeText={(v) =>
+                  setGoalProgressInput(v.replace(/[^\d]/g, ""))
+                }
+                placeholder="Số tiền vừa để dành"
+                keyboardType="numeric"
+                placeholderTextColor={colors.text3}
+              />
+              <View style={styles.modalRow}>
+                <TouchableOpacity
+                  style={styles.modalBtn}
+                  onPress={() => setShowProgressModal(false)}
+                >
+                  <Text style={styles.modalBtnText}>Huỷ</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnPrimary]}
+                  onPress={saveGoalProgress}
+                >
+                  <Text
+                    style={[styles.modalBtnText, styles.modalBtnTextPrimary]}
+                  >
+                    Cập nhật
+                  </Text>
+                </TouchableOpacity>
+              </View>
             </View>
           </View>
-        </View>
+        </KeyboardAvoidingView>
       </Modal>
     </SafeAreaView>
   );
