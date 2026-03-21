@@ -199,7 +199,10 @@ export default function BudgetScreen() {
   const handleDeleteCategory = (cat) => {
     if (!cat?.id) return;
     if (cat.id === "other") {
-      Alert.alert("Không thể xóa", "Danh mục `other` dùng để thay thế khi xóa danh mục khác.");
+      Alert.alert(
+        "Không thể xóa",
+        "Danh mục `other` dùng để thay thế khi xóa danh mục khác.",
+      );
       return;
     }
 
@@ -352,10 +355,7 @@ export default function BudgetScreen() {
                     {hasbudget ? (
                       <>
                         <Text
-                          style={[
-                            styles.catPercent,
-                            { color: progressColor },
-                          ]}
+                          style={[styles.catPercent, { color: progressColor }]}
                         >
                           {Math.round((spent / budget.amount) * 100)}%
                         </Text>
@@ -394,9 +394,7 @@ export default function BudgetScreen() {
         {/* Quản lý danh mục */}
         <View style={{ paddingHorizontal: 20, marginTop: 10, marginBottom: 6 }}>
           <Text style={styles.sectionTitle}>Quản lý danh mục</Text>
-          <Text style={styles.sectionSub}>
-            Tạo/sửa/xóa danh mục chi tiêu
-          </Text>
+          <Text style={styles.sectionSub}>Tạo/sửa/xóa danh mục chi tiêu</Text>
 
           <TouchableOpacity
             onPress={openCreateCategoryModal}
@@ -429,9 +427,17 @@ export default function BudgetScreen() {
                   gap: 10,
                 }}
               >
-                <View style={{ flexDirection: "row", alignItems: "center", gap: 10 }}>
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
                   <Text style={{ fontSize: 22 }}>{cat.emoji}</Text>
-                  <Text style={{ color: colors.textPrimary, fontWeight: "700" }}>
+                  <Text
+                    style={{ color: colors.textPrimary, fontWeight: "700" }}
+                  >
                     {cat.label}
                   </Text>
                 </View>
@@ -479,6 +485,7 @@ export default function BudgetScreen() {
       <Modal visible={showModal} transparent animationType="slide">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
           style={{ flex: 1 }}
         >
           <View style={styles.modalOverlay}>
@@ -500,7 +507,10 @@ export default function BudgetScreen() {
                 style={styles.input}
                 value={
                   budgetAmount
-                    ? formatMoney(parseInt(getRawNumber(budgetAmount), 10), "full").replace("đ", "")
+                    ? formatMoney(
+                        parseInt(getRawNumber(budgetAmount), 10),
+                        "full",
+                      ).replace("đ", "")
                     : ""
                 }
                 onChangeText={(text) => setBudgetAmount(getRawNumber(text))}
@@ -533,6 +543,7 @@ export default function BudgetScreen() {
       <Modal visible={showCategoryModal} transparent animationType="slide">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
           style={{ flex: 1 }}
         >
           <View style={styles.modalOverlay}>
@@ -560,7 +571,10 @@ export default function BudgetScreen() {
 
               <Text style={styles.inputLabel}>TÊN DANH MỤC</Text>
               <TextInput
-                style={[styles.input, { fontSize: 14, fontWeight: "700", letterSpacing: 0 }]}
+                style={[
+                  styles.input,
+                  { fontSize: 14, fontWeight: "700", letterSpacing: 0 },
+                ]}
                 value={categoryFormLabel}
                 onChangeText={setCategoryFormLabel}
                 placeholder="VD: Du lịch"
@@ -570,7 +584,15 @@ export default function BudgetScreen() {
 
               <Text style={styles.inputLabel}>EMOJI</Text>
               <TextInput
-                style={[styles.input, { fontSize: 18, fontWeight: "700", letterSpacing: 0, textAlign: "center" }]}
+                style={[
+                  styles.input,
+                  {
+                    fontSize: 18,
+                    fontWeight: "700",
+                    letterSpacing: 0,
+                    textAlign: "center",
+                  },
+                ]}
                 value={categoryFormEmoji}
                 onChangeText={setCategoryFormEmoji}
                 placeholder="VD: ✈️"

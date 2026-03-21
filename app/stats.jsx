@@ -12,6 +12,7 @@ import {
   Platform,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
+import DateTimePicker from "@react-native-community/datetimepicker";
 import useStore from "../store/useStore";
 import * as FileSystem from "expo-file-system";
 import * as Sharing from "expo-sharing";
@@ -39,6 +40,12 @@ export default function StatsScreen() {
   const [editCategory, setEditCategory] = useState("");
   const [editType, setEditType] = useState("expense");
   const [activeAction, setActiveAction] = useState(null); // 'export' | 'insights' | 'goals'
+  const [selectedCategories, setSelectedCategories] = useState([]);
+  const [selectedDate, setSelectedDate] = useState(null);
+  const [selectedType, setSelectedType] = useState(null); // 'income' | 'expense' | null
+  const [showCategoryFilter, setShowCategoryFilter] = useState(false);
+  const [showDatePicker, setShowDatePicker] = useState(false);
+  const [tempDate, setTempDate] = useState(new Date());
 
   const [currentMonth, setCurrentMonth] = useState(
     new Date().toISOString().slice(0, 7),
@@ -50,6 +57,18 @@ export default function StatsScreen() {
 
   // Lọc giao dịch theo tháng đang xem
   const monthTx = transactions.filter((tx) => tx.date.startsWith(currentMonth));
+  const filteredTx = monthTx
+    .filter((tx) => {
+      if (
+        selectedCategories.length > 0 &&
+        !selectedCategories.includes(tx.category)
+      )
+        return false;
+      if (selectedDate && tx.date !== selectedDate) return false;
+      if (selectedType && tx.type !== selectedType) return false;
+      return true;
+    })
+    .sort((a, b) => b.date.localeCompare(a.date)); // Default sort by date desc
 
   const income = monthTx
     .filter((tx) => tx.type === "income")
@@ -130,10 +149,7 @@ export default function StatsScreen() {
   const handleLongPress = (tx) => {
     Alert.alert(
       tx.note || "Giao dịch",
-      `${formatMoney(
-        tx.type === "income" ? tx.amount : -tx.amount,
-        "signed",
-      )}`,
+      `${formatMoney(tx.type === "income" ? tx.amount : -tx.amount, "signed")}`,
       [
         { text: "Huỷ", style: "cancel" },
         {
@@ -236,7 +252,10 @@ export default function StatsScreen() {
 
   return (
     <SafeAreaView style={styles.safe} edges={["top", "left", "right"]}>
-      <ScrollView showsVerticalScrollIndicator={false}>
+      <ScrollView
+        showsVerticalScrollIndicator={false}
+        contentContainerStyle={{ paddingBottom: 100 }}
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>Thống kê</Text>
@@ -374,15 +393,98 @@ export default function StatsScreen() {
         {/* Lịch sử giao dịch tháng này */}
         <View style={styles.section}>
           <Text style={styles.sectionTitle}>
-            Giao dịch tháng này ({monthTx.length})
+            Giao dịch tháng này ({filteredTx.length})
           </Text>
+          <View style={styles.sortRow}>
+            <TouchableOpacity
+              style={[
+                styles.sortChip,
+                selectedCategories.length > 0 && styles.sortChipActive,
+              ]}
+              onPress={() => setShowCategoryFilter(true)}
+            >
+              <Text
+                style={[
+                  styles.sortChipText,
+                  selectedCategories.length > 0 && styles.sortChipTextActive,
+                ]}
+              >
+                Danh mục{" "}
+                {selectedCategories.length > 0
+                  ? `(${selectedCategories.length})`
+                  : ""}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.sortChip, selectedDate && styles.sortChipActive]}
+              onPress={() => {
+                if (selectedDate) {
+                  setSelectedDate(null);
+                } else {
+                  setTempDate(new Date());
+                  setShowDatePicker(true);
+                }
+              }}
+            >
+              <Text
+                style={[
+                  styles.sortChipText,
+                  selectedDate && styles.sortChipTextActive,
+                ]}
+              >
+                Ngày {selectedDate ? selectedDate : ""}
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.sortChip,
+                selectedType === "income" && styles.sortChipActive,
+              ]}
+              onPress={() =>
+                setSelectedType(selectedType === "income" ? null : "income")
+              }
+            >
+              <Text
+                style={[
+                  styles.sortChipText,
+                  selectedType === "income" && styles.sortChipTextActive,
+                ]}
+              >
+                Thu nhập
+              </Text>
+            </TouchableOpacity>
+            <TouchableOpacity
+              style={[
+                styles.sortChip,
+                selectedType === "expense" && styles.sortChipActive,
+              ]}
+              onPress={() =>
+                setSelectedType(selectedType === "expense" ? null : "expense")
+              }
+            >
+              <Text
+                style={[
+                  styles.sortChipText,
+                  selectedType === "expense" && styles.sortChipTextActive,
+                ]}
+              >
+                Chi tiêu
+              </Text>
+            </TouchableOpacity>
+          </View>
 
           {monthTx.length === 0 ? (
             <View style={styles.emptyBox}>
               <Text style={styles.emptyText}>Chưa có giao dịch nào</Text>
             </View>
+          ) : filteredTx.length === 0 ? (
+            <View style={styles.emptyBox}>
+              <Text style={styles.emptyText}>
+                Không có giao dịch nào khớp với bộ lọc
+              </Text>
+            </View>
           ) : (
-            monthTx.map((tx) => {
+            filteredTx.map((tx) => {
               return (
                 <TouchableOpacity
                   key={tx.id}
@@ -424,6 +526,78 @@ export default function StatsScreen() {
         </View>
 
         <View style={{ height: 100 }} />
+
+        {/* Action Bar */}
+        <View style={styles.actionBar}>
+          <TouchableOpacity
+            style={[
+              styles.actionPill,
+              activeAction === "export" && styles.actionPillActive,
+            ]}
+            onPress={() => {
+              setActiveAction("export");
+              handleExportCSV();
+            }}
+          >
+            <Text style={styles.actionPillIco}>📤</Text>
+            <Text
+              style={[
+                styles.actionPillTxt,
+                activeAction === "export" && styles.actionPillTxtActive,
+              ]}
+            >
+              Xuất CSV
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.actionPill,
+              activeAction === "insights" && styles.actionPillActive,
+            ]}
+            onPress={() => {
+              setActiveAction("insights");
+              Alert.alert(
+                "Sắp ra mắt",
+                "Tính năng Thông tin trí tuệ nhân tạo đang được phát triển! 🚀",
+              );
+            }}
+          >
+            <Text style={styles.actionPillIco}>✨</Text>
+            <Text
+              style={[
+                styles.actionPillTxt,
+                activeAction === "insights" && styles.actionPillTxtActive,
+              ]}
+            >
+              Thông tin trí tuệ nhân tạo
+            </Text>
+          </TouchableOpacity>
+
+          <TouchableOpacity
+            style={[
+              styles.actionPill,
+              activeAction === "goals" && styles.actionPillActive,
+            ]}
+            onPress={() => {
+              setActiveAction("goals");
+              Alert.alert(
+                "Sắp ra mắt",
+                "Tính năng Mục tiêu tiết kiệm đang được phát triển! 🎯",
+              );
+            }}
+          >
+            <Text style={styles.actionPillIco}>🎯</Text>
+            <Text
+              style={[
+                styles.actionPillTxt,
+                activeAction === "goals" && styles.actionPillTxtActive,
+              ]}
+            >
+              Mục tiêu
+            </Text>
+          </TouchableOpacity>
+        </View>
       </ScrollView>
 
       <Modal visible={showEditModal} transparent animationType="slide">
@@ -476,7 +650,10 @@ export default function StatsScreen() {
                 style={styles.input}
                 value={
                   editAmount
-                    ? formatMoney(parseInt(editAmount.replace(/\./g, ""), 10), "full").replace("đ", "")
+                    ? formatMoney(
+                        parseInt(editAmount.replace(/\./g, ""), 10),
+                        "full",
+                      ).replace("đ", "")
                     : ""
                 }
                 onChangeText={(text) => setEditAmount(text.replace(/\./g, ""))}
@@ -539,77 +716,93 @@ export default function StatsScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Action Bar */}
-      <View style={styles.actionBar}>
-        <TouchableOpacity
-          style={[
-            styles.actionPill,
-            activeAction === "export" && styles.actionPillActive,
-          ]}
-          onPress={() => {
-            setActiveAction("export");
-            handleExportCSV();
-          }}
-        >
-          <Text style={styles.actionPillIco}>📤</Text>
-          <Text
-            style={[
-              styles.actionPillTxt,
-              activeAction === "export" && styles.actionPillTxtActive,
-            ]}
-          >
-            Xuất CSV
-          </Text>
-        </TouchableOpacity>
+      {/* Modal lọc danh mục */}
+      <Modal visible={showCategoryFilter} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Chọn danh mục</Text>
+            <ScrollView showsVerticalScrollIndicator={false}>
+              {categories.map((cat) => (
+                <TouchableOpacity
+                  key={cat.id}
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    paddingVertical: 12,
+                    borderBottomWidth: 1,
+                    borderBottomColor: colors.border,
+                  }}
+                  onPress={() => {
+                    if (selectedCategories.includes(cat.id)) {
+                      setSelectedCategories(
+                        selectedCategories.filter((id) => id !== cat.id),
+                      );
+                    } else {
+                      setSelectedCategories([...selectedCategories, cat.id]);
+                    }
+                  }}
+                >
+                  <View
+                    style={{
+                      width: 20,
+                      height: 20,
+                      borderRadius: 4,
+                      borderWidth: 2,
+                      borderColor: colors.accent,
+                      backgroundColor: selectedCategories.includes(cat.id)
+                        ? colors.accent
+                        : "transparent",
+                      marginRight: 12,
+                    }}
+                  />
+                  <Text style={{ fontSize: 18, marginRight: 8 }}>
+                    {cat.emoji}
+                  </Text>
+                  <Text
+                    style={{ color: colors.textPrimary, fontWeight: "600" }}
+                  >
+                    {cat.label}
+                  </Text>
+                </TouchableOpacity>
+              ))}
+            </ScrollView>
+            <View style={styles.modalBtns}>
+              <TouchableOpacity
+                style={styles.cancelBtn}
+                onPress={() => setShowCategoryFilter(false)}
+              >
+                <Text style={styles.cancelText}>Đóng</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={styles.saveBtn}
+                onPress={() => {
+                  setSelectedCategories([]);
+                  setShowCategoryFilter(false);
+                }}
+              >
+                <Text style={styles.saveText}>Xóa lọc</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
 
-        <TouchableOpacity
-          style={[
-            styles.actionPill,
-            activeAction === "insights" && styles.actionPillActive,
-          ]}
-          onPress={() => {
-            setActiveAction("insights");
-            Alert.alert(
-              "Sắp ra mắt",
-              "Tính năng Thông tin trí tuệ nhân tạo đang được phát triển! 🚀",
-            );
+      {/* Date Picker */}
+      {showDatePicker && (
+        <DateTimePicker
+          value={tempDate}
+          mode="date"
+          display="default"
+          onChange={(event, date) => {
+            setShowDatePicker(false);
+            if (date) {
+              const isoDate = date.toISOString().split("T")[0];
+              setSelectedDate(isoDate);
+              setTempDate(date);
+            }
           }}
-        >
-          <Text style={styles.actionPillIco}>✨</Text>
-          <Text
-            style={[
-              styles.actionPillTxt,
-              activeAction === "insights" && styles.actionPillTxtActive,
-            ]}
-          >
-            Thông tin trí tuệ nhân tạo
-          </Text>
-        </TouchableOpacity>
-
-        <TouchableOpacity
-          style={[
-            styles.actionPill,
-            activeAction === "goals" && styles.actionPillActive,
-          ]}
-          onPress={() => {
-            setActiveAction("goals");
-            Alert.alert(
-              "Sắp ra mắt",
-              "Tính năng Mục tiêu tiết kiệm đang được phát triển! 🎯",
-            );
-          }}
-        >
-          <Text style={styles.actionPillIco}>🎯</Text>
-          <Text
-            style={[
-              styles.actionPillTxt,
-              activeAction === "goals" && styles.actionPillTxtActive,
-            ]}
-          >
-            Mục tiêu
-          </Text>
-        </TouchableOpacity>
-      </View>
+        />
+      )}
 
       <NavBar activeRoute="/stats" />
     </SafeAreaView>

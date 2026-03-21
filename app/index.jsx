@@ -1,11 +1,13 @@
 // app/index.jsx
-import { useEffect } from "react";
+import { useState } from "react";
 import {
   View,
   Text,
   ScrollView,
   TouchableOpacity,
   StyleSheet,
+  Modal,
+  TextInput,
 } from "react-native";
 import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
@@ -22,6 +24,9 @@ export default function HomeScreen() {
   const colors = useStore((s) => s.colors);
   const styles = makeHomeStyles(colors);
   const categories = useStore((s) => s.categories);
+  const goals = useStore((s) => s.goals);
+  const addGoal = useStore((s) => s.addGoal);
+  const addGoalProgress = useStore((s) => s.addGoalProgress);
 
   const transactions = useStore((state) => state.transactions);
   const debts = useStore((state) => state.debts);
@@ -56,6 +61,33 @@ export default function HomeScreen() {
   const trendLabel = `${trendPercent >= 0 ? "+" : ""}${trendPercent.toFixed(1)}%`;
   const recentTx = transactions.slice(0, 5);
   const totalDebt = debts.reduce((sum, d) => sum + d.remaining_amount, 0);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalTarget, setGoalTarget] = useState("");
+  const [goalSaved, setGoalSaved] = useState("");
+  const [goalProgressInput, setGoalProgressInput] = useState("");
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const topGoal = goals[0];
+
+  const saveGoal = () => {
+    const targetAmount = parseInt(goalTarget || "0", 10);
+    const savedAmount = parseInt(goalSaved || "0", 10);
+    if (!goalTitle.trim() || targetAmount <= 0) return;
+    addGoal(goalTitle, targetAmount, savedAmount);
+    setGoalTitle("");
+    setGoalTarget("");
+    setGoalSaved("");
+    setShowGoalModal(false);
+  };
+
+  const saveGoalProgress = () => {
+    if (!topGoal) return;
+    const progressAmount = parseInt(goalProgressInput || "0", 10);
+    if (progressAmount <= 0) return;
+    addGoalProgress(topGoal.id, progressAmount);
+    setGoalProgressInput("");
+    setShowProgressModal(false);
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
@@ -109,21 +141,62 @@ export default function HomeScreen() {
           </View>
         </View>
 
-        {/* Add shortcut row */}
-        <TouchableOpacity style={styles.addRow} onPress={() => router.push("/add")}>
+        {/* Goal shortcut row */}
+        <TouchableOpacity style={styles.addRow} onPress={() => setShowGoalModal(true)}>
           <View style={styles.addRowLeft}>
             <View style={styles.addRowIcon}>
               <Text style={{ fontSize: 18, color: colors.accent, fontWeight: "800" }}>
-                +
+                🎯
               </Text>
             </View>
             <View>
-              <Text style={styles.addRowTitle}>Thêm giao dịch</Text>
-              <Text style={styles.addRowSub}>Ghi nhanh thu · chi</Text>
+              <Text style={styles.addRowTitle}>Đặt mục tiêu</Text>
+              <Text style={styles.addRowSub}>Theo dõi món đồ bạn muốn mua</Text>
             </View>
           </View>
           <Text style={styles.addRowArrow}>›</Text>
         </TouchableOpacity>
+        {topGoal && (
+          <View style={styles.goalCard}>
+            <View style={styles.goalHead}>
+              <View>
+                <Text style={styles.goalTitle}>{topGoal.title}</Text>
+                <Text style={styles.goalMeta}>Mục tiêu mua sắm</Text>
+              </View>
+              <Text style={styles.goalAmount}>
+                {formatMoney(topGoal.savedAmount)} / {formatMoney(topGoal.targetAmount)}
+              </Text>
+            </View>
+            <View style={styles.goalTrack}>
+              <View
+                style={[
+                  styles.goalFill,
+                  {
+                    width: `${Math.min(
+                      100,
+                      Math.round((topGoal.savedAmount / Math.max(1, topGoal.targetAmount)) * 100),
+                    )}%`,
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.goalFoot}>
+              <Text style={styles.goalPercent}>
+                {Math.min(
+                  100,
+                  Math.round((topGoal.savedAmount / Math.max(1, topGoal.targetAmount)) * 100),
+                )}
+                %
+              </Text>
+              <TouchableOpacity
+                style={styles.goalAddBtn}
+                onPress={() => setShowProgressModal(true)}
+              >
+                <Text style={styles.goalAddText}>+ Nạp thêm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
         {/* Recent Transactions */}
         <View style={styles.secHead}>
@@ -175,6 +248,81 @@ export default function HomeScreen() {
       </ScrollView>
 
       <NavBar activeRoute="/" />
+
+      <Modal visible={showGoalModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Đặt mục tiêu mua sắm</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={goalTitle}
+              onChangeText={setGoalTitle}
+              placeholder="Tên món đồ (VD: iPad, xe máy...)"
+              placeholderTextColor={colors.text3}
+            />
+            <TextInput
+              style={styles.modalInput}
+              value={goalTarget}
+              onChangeText={(v) => setGoalTarget(v.replace(/[^\d]/g, ""))}
+              placeholder="Số tiền mục tiêu"
+              keyboardType="numeric"
+              placeholderTextColor={colors.text3}
+            />
+            <TextInput
+              style={styles.modalInput}
+              value={goalSaved}
+              onChangeText={(v) => setGoalSaved(v.replace(/[^\d]/g, ""))}
+              placeholder="Đã để dành (tuỳ chọn)"
+              keyboardType="numeric"
+              placeholderTextColor={colors.text3}
+            />
+            <View style={styles.modalRow}>
+              <TouchableOpacity
+                style={styles.modalBtn}
+                onPress={() => setShowGoalModal(false)}
+              >
+                <Text style={styles.modalBtnText}>Huỷ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnPrimary]}
+                onPress={saveGoal}
+              >
+                <Text style={[styles.modalBtnText, styles.modalBtnTextPrimary]}>Lưu</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
+
+      <Modal visible={showProgressModal} transparent animationType="slide">
+        <View style={styles.modalOverlay}>
+          <View style={styles.modalBox}>
+            <Text style={styles.modalTitle}>Nạp thêm cho mục tiêu</Text>
+            <TextInput
+              style={styles.modalInput}
+              value={goalProgressInput}
+              onChangeText={(v) => setGoalProgressInput(v.replace(/[^\d]/g, ""))}
+              placeholder="Số tiền vừa để dành"
+              keyboardType="numeric"
+              placeholderTextColor={colors.text3}
+            />
+            <View style={styles.modalRow}>
+              <TouchableOpacity
+                style={styles.modalBtn}
+                onPress={() => setShowProgressModal(false)}
+              >
+                <Text style={styles.modalBtnText}>Huỷ</Text>
+              </TouchableOpacity>
+              <TouchableOpacity
+                style={[styles.modalBtn, styles.modalBtnPrimary]}
+                onPress={saveGoalProgress}
+              >
+                <Text style={[styles.modalBtnText, styles.modalBtnTextPrimary]}>Cập nhật</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        </View>
+      </Modal>
     </SafeAreaView>
   );
 }

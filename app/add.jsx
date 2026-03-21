@@ -302,7 +302,7 @@ export default function AddScreen() {
               value={note}
               onChangeText={setNote}
               onBlur={handleNoteBlur}
-              placeholder="Nhập ghi chú để trí tuệ nhân tạo tự phân loại..."
+              placeholder="Nhập ghi chú để Auto phân loại"
               placeholderTextColor={colors.textMuted}
             />
             <TouchableOpacity
@@ -313,7 +313,7 @@ export default function AddScreen() {
               {isClassifying ? (
                 <ActivityIndicator size="small" color={colors.accent} />
               ) : (
-                <Text style={styles.aiBtnText}>✨ Trí tuệ</Text>
+                <Text style={styles.aiBtnText}>Auto</Text>
               )}
             </TouchableOpacity>
           </View>

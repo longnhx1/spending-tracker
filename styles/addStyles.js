@@ -69,10 +69,11 @@ const makeStyles = (colors) =>
       borderColor: colors.border,
       borderRadius: 12,
       paddingHorizontal: 12,
-      paddingVertical: 10,
+      paddingVertical: 11,
       color: colors.textPrimary,
       fontSize: 13,
-      // Fix font for note/date input
+      lineHeight: 19,
+      letterSpacing: 0.2,
       fontFamily: FONTS.regular,
     },
     fieldRow: {
@@ -106,7 +107,16 @@ const makeStyles = (colors) =>
       fontFamily: FONTS.semiBold,
     },
 
-    amountRow: { flexDirection: "row", alignItems: "baseline" },
+    amountRow: {
+      flexDirection: "row",
+      alignItems: "baseline",
+      backgroundColor: colors.surface,
+      borderWidth: 0.5,
+      borderColor: colors.border2,
+      borderRadius: 16,
+      paddingHorizontal: 12,
+      paddingVertical: 10,
+    },
     amountCur: { color: colors.text3, fontSize: 14, marginRight: 8 },
     amountInput: {
       fontSize: 40,
@@ -157,13 +167,17 @@ const makeStyles = (colors) =>
       marginLeft: "auto",
       backgroundColor: colors.accentDim,
       borderRadius: 99,
-      paddingHorizontal: 10,
-      paddingVertical: 4,
+      minWidth: 66,
+      alignItems: "center",
+      justifyContent: "center",
+      paddingHorizontal: 14,
+      paddingVertical: 8,
     },
     aiBtnText: {
       color: colors.accent,
-      fontSize: 9,
+      fontSize: 11,
       fontWeight: "700",
+      letterSpacing: 0.2,
     },
 
   });

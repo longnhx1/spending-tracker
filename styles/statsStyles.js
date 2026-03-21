@@ -99,6 +99,18 @@ const makeStyles = (colors) =>
     },
     section: { paddingHorizontal: 20, marginBottom: 20 },
     sectionTitle: { fontSize: 13, color: colors.textPrimary, fontWeight: "600", marginBottom: 12 },
+    sortRow: { flexDirection: "row", flexWrap: "wrap", gap: 6, marginBottom: 10 },
+    sortChip: {
+      borderRadius: 99,
+      borderWidth: 0.5,
+      borderColor: colors.border,
+      backgroundColor: colors.surface,
+      paddingHorizontal: 9,
+      paddingVertical: 5,
+    },
+    sortChipActive: { borderColor: colors.accent, backgroundColor: colors.accentDim },
+    sortChipText: { fontSize: 9, fontWeight: "500", color: colors.text2 },
+    sortChipTextActive: { fontWeight: "700", color: colors.accent },
     emptyBox: {
       padding: 20,
       backgroundColor: colors.bg3,

@@ -29,6 +29,7 @@ const useStore = create((set, get) => ({
     transactions: [],
     debts: [],
     categories: [],
+    goals: [],
     currentMonth: new Date().toISOString().slice(0, 7), // "2026-03"
 
     // Load dữ liệu từ database
@@ -89,6 +90,56 @@ const useStore = create((set, get) => ({
     deleteCategory: (id) => {
         deleteCategory(id);
         get().loadCategories();
+    },
+
+    // ── Savings goals (local state) ─────────────────────────
+    addGoal: (title, targetAmount, savedAmount = 0, note = '') => {
+        const cleanTitle = String(title || '').trim();
+        const target = Number(targetAmount) || 0;
+        const saved = Number(savedAmount) || 0;
+        if (!cleanTitle || target <= 0) return;
+
+        const newGoal = {
+            id: `goal_${Date.now()}`,
+            title: cleanTitle,
+            targetAmount: target,
+            savedAmount: Math.max(0, Math.min(saved, target)),
+            note: String(note || '').trim(),
+            createdAt: new Date().toISOString(),
+        };
+        set((state) => ({ goals: [newGoal, ...state.goals] }));
+    },
+
+    updateGoal: (id, patch) => {
+        set((state) => ({
+            goals: state.goals.map((goal) => {
+                if (goal.id !== id) return goal;
+                const next = { ...goal, ...patch };
+                const target = Number(next.targetAmount) || 0;
+                const saved = Number(next.savedAmount) || 0;
+                return {
+                    ...next,
+                    targetAmount: target,
+                    savedAmount: target > 0 ? Math.max(0, Math.min(saved, target)) : 0,
+                };
+            }),
+        }));
+    },
+
+    deleteGoal: (id) => {
+        set((state) => ({ goals: state.goals.filter((goal) => goal.id !== id) }));
+    },
+
+    addGoalProgress: (id, amount) => {
+        const delta = Number(amount) || 0;
+        if (delta <= 0) return;
+        set((state) => ({
+            goals: state.goals.map((goal) => {
+                if (goal.id !== id) return goal;
+                const nextSaved = Math.min(goal.targetAmount, goal.savedAmount + delta);
+                return { ...goal, savedAmount: nextSaved };
+            }),
+        }));
     },
 
     // Tính tổng thu/chi trong tháng hiện tại
