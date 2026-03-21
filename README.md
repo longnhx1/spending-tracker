@@ -44,8 +44,6 @@ Do ứng dụng hiện tại đang trong giai đoạn phát triển và chưa đ
 
 ## 📸 Ảnh chụp màn hình
 
-*(Bạn hãy thay thế các link dưới đây bằng ảnh chụp màn hình thực tế từ ứng dụng của bạn nhé)*
-
 | Màn hình chính | Thêm giao dịch | Thống kê | Quản lý vay/nợ |
 | :---: | :---: | :---: | :---: |
 | ![Home](assets/screenshots/IMG_0277.PNG) | ![Add](/assets/screenshots/IMG_0279.PNG) | ![Stats](/assets/screenshots/IMG_0278.PNG) | ![Debt](/assets/screenshots/IMG_0283.PNG) |
