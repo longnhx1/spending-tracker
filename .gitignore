@@ -30,9 +30,6 @@ npm-debug.*
 .DS_Store
 Thumbs.db
 
-# Ảnh chụp màn hình cục bộ (có thể lộ số liệu tài chính) — README không trỏ vào repo
-assets/screenshots/
-
 # Cursor / agent
 .agents/
 skills-lock.json
