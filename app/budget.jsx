@@ -1,47 +1,74 @@
-import { useRouter } from "expo-router";
-import { useEffect, useMemo, useState } from "react";
+import { useState, useEffect } from "react";
 import {
+  View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  TextInput,
   Alert,
   KeyboardAvoidingView,
-  Modal,
   Platform,
-  ScrollView,
-  StyleSheet,
-  Text,
-  TextInput,
-  TouchableOpacity,
-  View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CATEGORIES } from "../constants/theme";
-import { useAppColors } from "../context/AppThemeContext";
 import useStore from "../store/useStore";
-
-const formatMoney = (amount) => Math.abs(amount).toLocaleString("vi-VN");
+import { getDb } from "../database/db";
+import makeBudgetStyles from "../styles/budgetStyle";
+import { formatMoney } from "../utils/formatMoney";
+import NavBar from "../components/NavBar";
 
 const getRawNumber = (text) => text.replace(/\./g, "");
+const getProgressColor = (percent, colors) => {
+  if (percent >= 100) return colors.danger;
+  if (percent >= 80) return colors.amber;
+  return colors.accent;
+};
 
 export default function BudgetScreen() {
-  const router = useRouter();
-  const colors = useAppColors();
-  const styles = useMemo(() => createStyles(colors), [colors]);
   const transactions = useStore((state) => state.transactions);
-  const budgets = useStore((state) => state.budgetsMonth);
   const loadTransactions = useStore((state) => state.loadTransactions);
-  const loadBudgetsForMonth = useStore((state) => state.loadBudgetsForMonth);
-  const saveBudgetToCloud = useStore((state) => state.saveBudget);
-  const deleteBudgetFromCloud = useStore((state) => state.deleteBudget);
+  const colors = useStore((state) => state.colors);
+  const styles = makeBudgetStyles(colors);
+  const categories = useStore((state) => state.categories);
+  const addCategory = useStore((state) => state.addCategory);
+  const updateCategory = useStore((state) => state.updateCategory);
+  const deleteCategory = useStore((state) => state.deleteCategory);
 
+  const [budgets, setBudgets] = useState([]);
   const [showModal, setShowModal] = useState(false);
   const [selectedCat, setSelectedCat] = useState(null);
   const [budgetAmount, setBudgetAmount] = useState("");
+
+  // ── Manage categories (CRUD) ──────────────────────────────
+  const [showCategoryModal, setShowCategoryModal] = useState(false);
+  const [categoryMode, setCategoryMode] = useState("create"); // 'create' | 'edit'
+  const [categoryFormLabel, setCategoryFormLabel] = useState("");
+  const [categoryFormEmoji, setCategoryFormEmoji] = useState("");
+  const [editingCategory, setEditingCategory] = useState(null);
 
   const currentMonth = new Date().toISOString().slice(0, 7);
 
   useEffect(() => {
     loadTransactions();
-    loadBudgetsForMonth(currentMonth);
-  }, [currentMonth, loadTransactions, loadBudgetsForMonth]);
+    loadBudgets();
+  }, []);
+
+  const loadBudgets = async () => {
+    const db = await getDb();
+    await db.execAsync(`
+      CREATE TABLE IF NOT EXISTS budgets (
+        id INTEGER PRIMARY KEY AUTOINCREMENT,
+        category TEXT NOT NULL UNIQUE,
+        amount REAL NOT NULL,
+        month TEXT NOT NULL
+      );
+    `);
+    const data = await db.getAllAsync("SELECT * FROM budgets WHERE month = ?", [
+      currentMonth,
+    ]);
+    setBudgets(data);
+  };
 
   // Tính đã chi bao nhiêu theo từng danh mục tháng này
   const getSpent = (categoryId) => {
@@ -64,15 +91,18 @@ export default function BudgetScreen() {
       Alert.alert("Lỗi", "Vui lòng nhập số tiền hợp lệ");
       return;
     }
+    const db = await getDb();
     const amount = parseInt(getRawNumber(budgetAmount));
-    try {
-      await saveBudgetToCloud(selectedCat.id, amount, currentMonth);
-      setBudgetAmount("");
-      setShowModal(false);
-      setSelectedCat(null);
-    } catch (e) {
-      Alert.alert("Lỗi", e.message ?? "Không lưu được ngân sách.");
-    }
+    await db.runAsync(
+      `INSERT INTO budgets (category, amount, month)
+       VALUES (?, ?, ?)
+       ON CONFLICT(category) DO UPDATE SET amount = ?, month = ?`,
+      [selectedCat.id, amount, currentMonth, amount, currentMonth],
+    );
+    await loadBudgets();
+    setBudgetAmount("");
+    setShowModal(false);
+    setSelectedCat(null);
   };
 
   const handleDeleteBudget = (cat) => {
@@ -82,11 +112,12 @@ export default function BudgetScreen() {
         text: "Xoá",
         style: "destructive",
         onPress: async () => {
-          try {
-            await deleteBudgetFromCloud(cat.id, currentMonth);
-          } catch (e) {
-            Alert.alert("Lỗi", e.message ?? "Không xoá được.");
-          }
+          const db = await getDb();
+          await db.runAsync(
+            "DELETE FROM budgets WHERE category = ? AND month = ?",
+            [cat.id, currentMonth],
+          );
+          await loadBudgets();
         },
       },
     ]);
@@ -97,6 +128,115 @@ export default function BudgetScreen() {
     setSelectedCat(cat);
     setBudgetAmount(existing ? String(existing.amount) : "");
     setShowModal(true);
+  };
+
+  // ── Manage categories helpers ──────────────────────────────
+  const normalize = (s) =>
+    (s || "")
+      .toLowerCase()
+      .normalize("NFD")
+      .replace(/[\u0300-\u036f]/g, "")
+      .trim();
+
+  // Tạo id “ổn định” để lưu vào DB (giữ nguyên khi update label/emoji)
+  const makeCategoryId = (label) => {
+    const base = normalize(label)
+      .replace(/\s+/g, "_")
+      .replace(/[^a-z0-9_]/g, "_");
+    return base || "";
+  };
+
+  const openCreateCategoryModal = () => {
+    setCategoryMode("create");
+    setEditingCategory(null);
+    setCategoryFormLabel("");
+    setCategoryFormEmoji("");
+    setShowCategoryModal(true);
+  };
+
+  const openEditCategoryModal = (cat) => {
+    setCategoryMode("edit");
+    setEditingCategory(cat);
+    setCategoryFormLabel(cat.label);
+    setCategoryFormEmoji(cat.emoji);
+    setShowCategoryModal(true);
+  };
+
+  const handleSaveCategory = () => {
+    const label = (categoryFormLabel || "").trim();
+    const emoji = (categoryFormEmoji || "").trim();
+
+    if (!label) {
+      Alert.alert("Lỗi", "Vui lòng nhập tên danh mục");
+      return;
+    }
+    if (!emoji) {
+      Alert.alert("Lỗi", "Vui lòng nhập emoji cho danh mục");
+      return;
+    }
+
+    if (categoryMode === "create") {
+      const id = makeCategoryId(label);
+      if (!id) {
+        Alert.alert("Lỗi", "Không thể tạo id danh mục từ tên");
+        return;
+      }
+      if (id === "thu_nhap") {
+        Alert.alert("Lỗi", "Không thể tạo danh mục trùng id hệ thống");
+        return;
+      }
+      addCategory(id, label, emoji);
+    } else if (editingCategory) {
+      updateCategory(editingCategory.id, label, emoji);
+    }
+
+    setShowCategoryModal(false);
+    setCategoryFormLabel("");
+    setCategoryFormEmoji("");
+    setEditingCategory(null);
+  };
+
+  const handleDeleteCategory = (cat) => {
+    if (!cat?.id) return;
+    if (cat.id === "other") {
+      Alert.alert(
+        "Không thể xóa",
+        "Danh mục `other` dùng để thay thế khi xóa danh mục khác.",
+      );
+      return;
+    }
+
+    Alert.alert("Xóa danh mục", `Xóa "${cat.label}" và gán lại về "Khác"?`, [
+      { text: "Huỷ", style: "cancel" },
+      {
+        text: "Xóa",
+        style: "destructive",
+        onPress: async () => {
+          // 1) Reassign toàn bộ transactions sang 'other'
+          const db = await getDb();
+          await db.runAsync(
+            "UPDATE transactions SET category = ? WHERE category = ?",
+            ["other", cat.id],
+          );
+
+          // 2) Xóa budgets của danh mục đó ở tháng hiện tại
+          await db.runAsync(
+            "DELETE FROM budgets WHERE category = ? AND month = ?",
+            [cat.id, currentMonth],
+          );
+
+          // 3) Xóa danh mục
+          deleteCategory(cat.id);
+
+          // 4) Refresh UI
+          await loadBudgets();
+          setSelectedCat(null);
+          setShowModal(false);
+          setShowCategoryModal(false);
+          setEditingCategory(null);
+        },
+      },
+    ]);
   };
 
   // Tổng ngân sách và đã chi
@@ -121,14 +261,14 @@ export default function BudgetScreen() {
           <View style={styles.overviewCard}>
             <Text style={styles.overviewLabel}>TỔNG NGÂN SÁCH</Text>
             <Text style={styles.overviewAmount}>
-              ₫{formatMoney(totalBudget)}
+              {formatMoney(totalBudget)}
             </Text>
 
             <View style={styles.overviewRow}>
               <View>
                 <Text style={styles.overviewSub}>Đã chi</Text>
                 <Text style={[styles.overviewVal, { color: colors.danger }]}>
-                  ₫{formatMoney(totalSpent)}
+                  {formatMoney(totalSpent)}
                 </Text>
               </View>
               <View>
@@ -144,7 +284,7 @@ export default function BudgetScreen() {
                     },
                   ]}
                 >
-                  ₫{formatMoney(Math.abs(totalBudget - totalSpent))}
+                  {formatMoney(Math.abs(totalBudget - totalSpent))}
                 </Text>
               </View>
               <View>
@@ -178,7 +318,7 @@ export default function BudgetScreen() {
             Bấm vào danh mục để đặt ngân sách
           </Text>
 
-          {CATEGORIES.map((cat) => {
+          {categories.map((cat) => {
             const budget = getBudget(cat.id);
             const spent = getSpent(cat.id);
             const hasbudget = !!budget;
@@ -186,6 +326,7 @@ export default function BudgetScreen() {
               ? Math.min((spent / budget.amount) * 100, 100)
               : 0;
             const isOver = hasbudget && spent > budget.amount;
+            const progressColor = getProgressColor(percent, colors);
 
             return (
               <TouchableOpacity
@@ -201,7 +342,7 @@ export default function BudgetScreen() {
                       <Text style={styles.catName}>{cat.label}</Text>
                       {hasbudget ? (
                         <Text style={styles.catSub}>
-                          ₫{formatMoney(spent)} / ₫{formatMoney(budget.amount)}
+                          {formatMoney(spent)} / {formatMoney(budget.amount)}
                         </Text>
                       ) : (
                         <Text style={styles.catSubMuted}>
@@ -214,10 +355,7 @@ export default function BudgetScreen() {
                     {hasbudget ? (
                       <>
                         <Text
-                          style={[
-                            styles.catPercent,
-                            { color: isOver ? colors.danger : colors.accent },
-                          ]}
+                          style={[styles.catPercent, { color: progressColor }]}
                         >
                           {Math.round((spent / budget.amount) * 100)}%
                         </Text>
@@ -238,7 +376,7 @@ export default function BudgetScreen() {
                           width: `${percent}%`,
                           backgroundColor: isOver
                             ? colors.danger
-                            : colors.accent,
+                            : progressColor,
                         },
                       ]}
                     />
@@ -253,6 +391,93 @@ export default function BudgetScreen() {
           </Text>
         </View>
 
+        {/* Quản lý danh mục */}
+        <View style={{ paddingHorizontal: 20, marginTop: 10, marginBottom: 6 }}>
+          <Text style={styles.sectionTitle}>Quản lý danh mục</Text>
+          <Text style={styles.sectionSub}>Tạo/sửa/xóa danh mục chi tiêu</Text>
+
+          <TouchableOpacity
+            onPress={openCreateCategoryModal}
+            style={{
+              backgroundColor: colors.bg3,
+              borderWidth: 1,
+              borderColor: colors.border,
+              borderRadius: 12,
+              paddingVertical: 12,
+              alignItems: "center",
+              marginTop: 6,
+            }}
+          >
+            <Text style={{ color: colors.accent, fontWeight: "800" }}>
+              + Thêm danh mục
+            </Text>
+          </TouchableOpacity>
+
+          <View style={{ marginTop: 12 }}>
+            {categories.map((cat) => (
+              <View
+                key={cat.id}
+                style={{
+                  flexDirection: "row",
+                  justifyContent: "space-between",
+                  alignItems: "center",
+                  paddingVertical: 10,
+                  borderBottomWidth: 1,
+                  borderBottomColor: colors.border,
+                  gap: 10,
+                }}
+              >
+                <View
+                  style={{
+                    flexDirection: "row",
+                    alignItems: "center",
+                    gap: 10,
+                  }}
+                >
+                  <Text style={{ fontSize: 22 }}>{cat.emoji}</Text>
+                  <Text
+                    style={{ color: colors.textPrimary, fontWeight: "700" }}
+                  >
+                    {cat.label}
+                  </Text>
+                </View>
+
+                <View style={{ flexDirection: "row", gap: 8 }}>
+                  <TouchableOpacity
+                    onPress={() => openEditCategoryModal(cat)}
+                    style={{
+                      backgroundColor: colors.bg3,
+                      borderWidth: 1,
+                      borderColor: colors.border,
+                      borderRadius: 10,
+                      paddingHorizontal: 10,
+                      paddingVertical: 8,
+                    }}
+                  >
+                    <Text>✏️</Text>
+                  </TouchableOpacity>
+
+                  <TouchableOpacity
+                    onPress={() => handleDeleteCategory(cat)}
+                    disabled={cat.id === "other"}
+                    style={{
+                      backgroundColor: colors.bg3,
+                      borderWidth: 1,
+                      borderColor: colors.danger,
+                      borderRadius: 10,
+                      paddingHorizontal: 10,
+                      paddingVertical: 8,
+                      opacity: cat.id === "other" ? 0.4 : 1,
+                    }}
+                  >
+                    <Text style={{ color: colors.danger }}>🗑️</Text>
+                  </TouchableOpacity>
+                </View>
+              </View>
+            ))}
+          </View>
+        </View>
+
         <View style={{ height: 100 }} />
       </ScrollView>
 
@@ -260,6 +485,7 @@ export default function BudgetScreen() {
       <Modal visible={showModal} transparent animationType="slide">
         <KeyboardAvoidingView
           behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
           style={{ flex: 1 }}
         >
           <View style={styles.modalOverlay}>
@@ -271,7 +497,7 @@ export default function BudgetScreen() {
                     Ngân sách — {selectedCat?.label}
                   </Text>
                   <Text style={styles.modalSub}>
-                    Đã chi: ₫{formatMoney(getSpent(selectedCat?.id || ""))}
+                    Đã chi: {formatMoney(getSpent(selectedCat?.id || ""))}
                   </Text>
                 </View>
               </View>
@@ -281,9 +507,10 @@ export default function BudgetScreen() {
                 style={styles.input}
                 value={
                   budgetAmount
-                    ? parseInt(getRawNumber(budgetAmount)).toLocaleString(
-                        "vi-VN",
-                      )
+                    ? formatMoney(
+                        parseInt(getRawNumber(budgetAmount), 10),
+                        "full",
+                      ).replace("đ", "")
                     : ""
                 }
                 onChangeText={(text) => setBudgetAmount(getRawNumber(text))}
@@ -312,265 +539,107 @@ export default function BudgetScreen() {
         </KeyboardAvoidingView>
       </Modal>
 
-      {/* Bottom Nav */}
-      <View style={styles.bottomNav}>
-        {[
-          { icon: "🏠", label: "Home", route: "/" },
-          { icon: "📊", label: "Stats", route: "/stats" },
-          { icon: "➕", label: "Add", route: "/add" },
-          { icon: "💳", label: "Nợ", route: "/debt" },
-        ].map((item) => {
-          const isActive = false;
-          return (
-            <TouchableOpacity
-              key={item.label}
-              style={styles.navItem}
-              onPress={() => router.push(item.route)}
-            >
-              <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                {item.icon}
-              </Text>
-              <View style={[styles.navDot, isActive && styles.navDotActive]} />
-              <Text
-                style={[styles.navLabel, isActive && styles.navLabelActive]}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      {/* Modal quản lý danh mục */}
+      <Modal visible={showCategoryModal} transparent animationType="slide">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <View style={styles.modalHeader}>
+                <Text style={styles.modalEmoji}>
+                  {categoryMode === "create"
+                    ? categoryFormEmoji || "📦"
+                    : editingCategory?.emoji || categoryFormEmoji || "📦"}
+                </Text>
+                <View>
+                  <Text style={styles.modalTitle}>
+                    {categoryMode === "create"
+                      ? "Thêm danh mục"
+                      : "Cập nhật danh mục"}
+                  </Text>
+                  <Text style={styles.modalSub}>
+                    ID:{" "}
+                    {categoryMode === "create"
+                      ? makeCategoryId(categoryFormLabel)
+                      : editingCategory?.id}
+                  </Text>
+                </View>
+              </View>
+
+              <Text style={styles.inputLabel}>TÊN DANH MỤC</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  { fontSize: 14, fontWeight: "700", letterSpacing: 0 },
+                ]}
+                value={categoryFormLabel}
+                onChangeText={setCategoryFormLabel}
+                placeholder="VD: Du lịch"
+                placeholderTextColor={colors.textMuted}
+                autoFocus
+              />
+
+              <Text style={styles.inputLabel}>EMOJI</Text>
+              <TextInput
+                style={[
+                  styles.input,
+                  {
+                    fontSize: 18,
+                    fontWeight: "700",
+                    letterSpacing: 0,
+                    textAlign: "center",
+                  },
+                ]}
+                value={categoryFormEmoji}
+                onChangeText={setCategoryFormEmoji}
+                placeholder="VD: ✈️"
+                placeholderTextColor={colors.textMuted}
+              />
+
+              <View style={styles.modalBtns}>
+                <TouchableOpacity
+                  style={styles.cancelBtn}
+                  onPress={() => setShowCategoryModal(false)}
+                >
+                  <Text style={styles.cancelText}>Huỷ</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={styles.saveBtn}
+                  onPress={handleSaveCategory}
+                >
+                  <Text style={styles.saveText}>Lưu</Text>
+                </TouchableOpacity>
+              </View>
+
+              {categoryMode === "edit" &&
+                editingCategory &&
+                editingCategory.id !== "other" && (
+                  <TouchableOpacity
+                    style={{
+                      marginTop: 14,
+                      backgroundColor: colors.bg3,
+                      borderWidth: 1,
+                      borderColor: colors.danger,
+                      borderRadius: 12,
+                      paddingVertical: 12,
+                      alignItems: "center",
+                    }}
+                    onPress={() => handleDeleteCategory(editingCategory)}
+                  >
+                    <Text style={{ color: colors.danger, fontWeight: "800" }}>
+                      Xóa danh mục
+                    </Text>
+                  </TouchableOpacity>
+                )}
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <NavBar activeRoute="/budget" />
     </SafeAreaView>
   );
-}
-
-/** @param {import('../constants/theme').AppColors} c */
-function createStyles(c) {
-  return StyleSheet.create({
-    safe: { flex: 1, backgroundColor: c.bg0 },
-    header: {
-      paddingHorizontal: 20,
-      paddingTop: 16,
-      paddingBottom: 8,
-    },
-    title: { fontSize: 24, color: c.textPrimary, fontWeight: "800" },
-    subtitle: { fontSize: 11, color: c.silver, opacity: 0.5, marginTop: 2 },
-    overviewCard: {
-      margin: 20,
-      backgroundColor: c.bg2,
-      borderWidth: 1,
-      borderColor: c.heroCardBorder,
-      borderRadius: 22,
-      padding: 20,
-    },
-    overviewLabel: {
-      fontSize: 9,
-      color: c.silver,
-      opacity: 0.5,
-      letterSpacing: 2.5,
-    },
-    overviewAmount: {
-      fontSize: 30,
-      color: c.textPrimary,
-      fontWeight: "300",
-      marginTop: 6,
-      letterSpacing: -1,
-    },
-    overviewRow: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      marginTop: 14,
-      marginBottom: 12,
-    },
-    overviewSub: {
-      fontSize: 9,
-      color: c.silver,
-      opacity: 0.4,
-      letterSpacing: 1,
-    },
-    overviewVal: {
-      fontSize: 14,
-      color: c.textPrimary,
-      fontWeight: "500",
-      marginTop: 3,
-    },
-    masterTrack: {
-      height: 6,
-      backgroundColor: c.trackMuted,
-      borderRadius: 3,
-    },
-    masterFill: {
-      height: "100%",
-      borderRadius: 3,
-    },
-    section: { paddingHorizontal: 20, marginBottom: 10 },
-    sectionTitle: {
-      fontSize: 13,
-      color: c.textPrimary,
-      fontWeight: "600",
-      marginBottom: 4,
-    },
-    sectionSub: {
-      fontSize: 11,
-      color: c.silver,
-      opacity: 0.4,
-      marginBottom: 14,
-    },
-    catCard: {
-      backgroundColor: c.bg3,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: 16,
-      padding: 14,
-      marginBottom: 10,
-    },
-    catCardOver: { borderColor: "rgba(255,77,109,0.4)" },
-    catTop: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      marginBottom: 8,
-    },
-    catLeft: { flexDirection: "row", alignItems: "center", gap: 10 },
-    catEmoji: { fontSize: 24 },
-    catName: { fontSize: 13, color: c.textPrimary, fontWeight: "600" },
-    catSub: { fontSize: 10, color: c.silver, opacity: 0.5, marginTop: 2 },
-    catSubMuted: {
-      fontSize: 10,
-      color: c.silver,
-      opacity: 0.3,
-      marginTop: 2,
-      fontStyle: "italic",
-    },
-    catRight: { alignItems: "flex-end" },
-    catPercent: { fontSize: 14, fontWeight: "600" },
-    overTag: {
-      fontSize: 9,
-      color: c.danger,
-      backgroundColor: "rgba(255,77,109,0.1)",
-      paddingHorizontal: 6,
-      paddingVertical: 2,
-      borderRadius: 4,
-      marginTop: 3,
-    },
-    addTag: {
-      fontSize: 11,
-      color: c.accent,
-      opacity: 0.6,
-    },
-    progressTrack: {
-      height: 4,
-      backgroundColor: c.trackMuted,
-      borderRadius: 2,
-    },
-    progressFill: {
-      height: "100%",
-      borderRadius: 2,
-    },
-    hint: {
-      fontSize: 11,
-      color: c.silver,
-      opacity: 0.3,
-      textAlign: "center",
-      marginTop: 8,
-      marginBottom: 4,
-    },
-    modalOverlay: {
-      flex: 1,
-      backgroundColor: c.modalOverlay,
-      justifyContent: "flex-end",
-    },
-    modalBox: {
-      backgroundColor: c.bg1,
-      borderTopLeftRadius: 24,
-      borderTopRightRadius: 24,
-      padding: 24,
-      borderTopWidth: 1,
-      borderColor: c.border,
-    },
-    modalHeader: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      marginBottom: 16,
-    },
-    modalEmoji: { fontSize: 32 },
-    modalTitle: {
-      fontSize: 16,
-      color: c.textPrimary,
-      fontWeight: "700",
-    },
-    modalSub: { fontSize: 11, color: c.silver, opacity: 0.5, marginTop: 2 },
-    inputLabel: {
-      fontSize: 9,
-      color: c.silver,
-      opacity: 0.4,
-      letterSpacing: 2,
-      textTransform: "uppercase",
-      marginBottom: 8,
-    },
-    input: {
-      backgroundColor: c.bg3,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: 12,
-      padding: 14,
-      color: c.textPrimary,
-      fontSize: 20,
-      fontWeight: "300",
-      letterSpacing: -0.5,
-    },
-    modalBtns: { flexDirection: "row", gap: 10, marginTop: 16 },
-    cancelBtn: {
-      flex: 1,
-      padding: 14,
-      borderRadius: 12,
-      backgroundColor: c.bg3,
-      borderWidth: 1,
-      borderColor: c.border,
-      alignItems: "center",
-    },
-    cancelText: { color: c.silver, fontWeight: "600" },
-    saveBtn: {
-      flex: 2,
-      padding: 14,
-      borderRadius: 12,
-      backgroundColor: c.electric,
-      alignItems: "center",
-    },
-    saveText: { color: "#fff", fontWeight: "700", fontSize: 14 },
-    bottomNav: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      flexDirection: "row",
-      justifyContent: "space-around",
-      paddingTop: 10,
-      paddingBottom: 28,
-      paddingHorizontal: 8,
-      backgroundColor: c.navBarBg,
-      borderTopWidth: 1,
-      borderTopColor: c.navBarBorder,
-    },
-    navItem: { alignItems: "center", gap: 3 },
-    navIcon: { fontSize: 20, opacity: 0.3 },
-    navIconActive: { opacity: 1 },
-    navDot: {
-      width: 4,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: c.accent,
-      opacity: 0,
-    },
-    navDotActive: { opacity: 1 },
-    navLabel: {
-      fontSize: 8,
-      color: c.silver,
-      opacity: 0.3,
-      letterSpacing: 1,
-      textTransform: "uppercase",
-    },
-    navLabelActive: { color: c.accent, opacity: 1 },
-  });
 }

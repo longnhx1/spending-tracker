@@ -38,6 +38,26 @@ export async function addTransaction(amount, type, category, note, date) {
   return mapTransaction(data);
 }
 
+export async function updateTransaction(id, amount, type, category, note, date) {
+  const { error } = await supabase
+    .from("transactions")
+    .update({
+      amount,
+      type,
+      category,
+      note: note || null,
+      date,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteTransaction(id) {
+  const { error } = await supabase.from("transactions").delete().eq("id", id);
+  if (error) throw error;
+}
+
 export async function insertTransactionsMigratedBatch(rows) {
   if (!rows.length) return;
   const payload = rows.map((row) => {
@@ -114,6 +134,24 @@ export async function updateDebtRemaining(id, remainingAmount) {
       updated_at: new Date().toISOString(),
     })
     .eq("id", id);
+  if (error) throw error;
+}
+
+export async function updateDebtDetails(id, name, totalAmount, dueDate) {
+  const { error } = await supabase
+    .from("debts")
+    .update({
+      name,
+      total_amount: totalAmount,
+      due_date: dueDate ?? null,
+      updated_at: new Date().toISOString(),
+    })
+    .eq("id", id);
+  if (error) throw error;
+}
+
+export async function deleteDebtRow(id) {
+  const { error } = await supabase.from("debts").delete().eq("id", id);
   if (error) throw error;
 }
 

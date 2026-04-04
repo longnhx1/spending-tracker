@@ -1,122 +1,213 @@
 // constants/theme.js
 
-/** @typedef {typeof DARK_COLORS} AppColors */
+// Base theme tokens (tách DARK/LIGHT để toggle được)
+export const DARK = {
+  bg0: '#0B0F14',
+  bg1: '#131920',
+  bg2: '#1A2330',
+  bg3: '#222E3C',
+  surface: '#1E2A38',
+  surface2: '#253344',
 
-export const DARK_COLORS = {
-  bg0: "#0B0F14",
-  bg1: "#121212",
-  bg2: "#0A1A2F",
-  bg3: "#0D1B2A",
-  gray1: "#2C2F33",
-  gray2: "#3A3F44",
-  silver: "#8A9BA8",
-  navy: "#1F4068",
-  accent: "#00A8FF",
-  cyan: "#00FFFF",
-  electric: "#0096FF",
-  success: "#00E5A0",
-  danger: "#FF4D6D",
-  warning: "#FFB800",
-  textPrimary: "#FFFFFF",
-  textSecondary: "#8A9BA8",
-  textMuted: "#3A3F44",
-  border: "#1A2535",
-  cardBorderStrong: "#1A2D45",
-  trackMuted: "#1A2535",
-  navBarBg: "#0A0E13",
-  navBarBorder: "#141C26",
-  txTitle: "#CCCCCC",
-  pillInnerBg: "rgba(255,255,255,0.03)",
-  heroCardBorder: "#1A2D45",
+  accent: '#00A8FF',
+  accentDim: 'rgba(0,168,255,0.12)',
+  accentMid: 'rgba(0,168,255,0.25)',
+  danger: '#FF4D6D',
+  dangerDim: 'rgba(255,77,109,0.12)',
+  success: '#00E5A0',
+  successDim: 'rgba(0,229,160,0.12)',
+
+  text1: '#E8F0F8',
+  text2: '#8DA4BE',
+  text3: '#4A6380',
+  border: 'rgba(0,168,255,0.12)',
+  border2: 'rgba(0,168,255,0.22)',
+
+  // UI extras
+  glassPill: "rgba(255,255,255,0.07)",
+  accentGlass: "rgba(0,168,255,0.08)",
   modalOverlay: "rgba(0,0,0,0.7)",
-  catItemSelectedExpense: "rgba(255,77,109,0.08)",
-  catItemSelectedIncome: "rgba(0,229,160,0.08)",
-  toggleExpenseBg: "rgba(255,77,109,0.15)",
-  toggleIncomeBg: "rgba(0,229,160,0.1)",
-  actionPillActiveBg: "rgba(0,168,255,0.08)",
-  txIconBg: "rgba(0,168,255,0.08)",
-  pillBorder: "#1E2D3D",
+  amber: "#FFB547",
+  amberDim: "rgba(255,181,71,0.12)",
+  chipBg: "rgba(255,255,255,0.07)",
 };
 
-export const LIGHT_COLORS = {
-  bg0: "#F1F5F9",
-  bg1: "#FFFFFF",
-  bg2: "#E2E8F0",
-  bg3: "#FFFFFF",
-  gray1: "#E2E8F0",
-  gray2: "#CBD5E1",
-  silver: "#64748B",
-  navy: "#1E40AF",
-  accent: "#0284C7",
-  cyan: "#0891B2",
-  electric: "#0369A1",
-  success: "#059669",
-  danger: "#DC2626",
-  warning: "#D97706",
-  textPrimary: "#0F172A",
-  textSecondary: "#475569",
-  textMuted: "#94A3B8",
-  border: "#E2E8F0",
-  cardBorderStrong: "#CBD5E1",
-  trackMuted: "#E2E8F0",
-  navBarBg: "#FFFFFF",
-  navBarBorder: "#E2E8F0",
-  txTitle: "#334155",
-  pillInnerBg: "rgba(15,23,42,0.04)",
-  heroCardBorder: "#CBD5E1",
-  modalOverlay: "rgba(15,23,42,0.45)",
-  catItemSelectedExpense: "rgba(220,38,38,0.08)",
-  catItemSelectedIncome: "rgba(5,150,105,0.1)",
-  toggleExpenseBg: "rgba(220,38,38,0.12)",
-  toggleIncomeBg: "rgba(5,150,105,0.12)",
-  actionPillActiveBg: "rgba(2,132,199,0.1)",
-  txIconBg: "rgba(2,132,199,0.12)",
-  pillBorder: "#CBD5E1",
+export const LIGHT = {
+  bg0: '#F0F4F8',
+  bg1: '#E8EEF5',
+  bg2: '#FFFFFF',
+  bg3: '#F5F8FC',
+  surface: '#FFFFFF',
+  surface2: '#EDF2F8',
+
+  accent: '#0085CC',
+  accentDim: 'rgba(0,133,204,0.08)',
+  accentMid: 'rgba(0,133,204,0.18)',
+  danger: '#E0294A',
+  dangerDim: 'rgba(224,41,74,0.10)',
+  success: '#00B87A',
+  successDim: 'rgba(0,184,122,0.10)',
+
+  text1: '#0D1B2A',
+  text2: '#4A6380',
+  text3: '#8DA4BE',
+  border: 'rgba(0,133,204,0.14)',
+  border2: 'rgba(0,133,204,0.28)',
+
+  // UI extras
+  glassPill: "rgba(255,255,255,0.07)",
+  accentGlass: "rgba(0,133,204,0.08)",
+  modalOverlay: "rgba(0,0,0,0.7)",
+  amber: "#E8920A",
+  amberDim: "rgba(232,146,10,0.10)",
+  chipBg: "rgba(0,0,0,0.05)",
 };
+
+// Alias tiện dùng — component cũ có thể import `COLORS`
+// (thực tế nên dùng `useTheme()` để nhận đúng bộ theo mode)
+export const COLORS = DARK;
+
+// Danh mục chi tiêu (key/label/icon/color) + alias tương thích code cũ
+export const CATEGORIES = [
+  { key: 'food', label: 'Ăn uống', icon: '🍜', color: '#00A8FF', id: 'food', emoji: '🍜' },
+  {
+    key: 'transport',
+    label: 'Di chuyển',
+    icon: '🚗',
+    color: '#00E5A0',
+    id: 'transport',
+    emoji: '🚗',
+  },
+  { key: 'housing', label: 'Nhà ở', icon: '🏠', color: '#FFB547', id: 'housing', emoji: '🏠' },
+  { key: 'health', label: 'Sức khỏe', icon: '💊', color: '#00E5A0', id: 'health', emoji: '💊' },
+  {
+    key: 'entertain',
+    label: 'Giải trí',
+    icon: '🎮',
+    color: '#A78BFA',
+    id: 'entertain',
+    emoji: '🎮',
+  },
+  {
+    key: 'shopping',
+    label: 'Mua sắm',
+    icon: '🛍️',
+    color: '#FF4D6D',
+    id: 'shopping',
+    emoji: '🛍️',
+  },
+  {
+    key: 'education',
+    label: 'Học tập',
+    icon: '📚',
+    color: '#00A8FF',
+    id: 'education',
+    emoji: '📚',
+  },
+  { key: 'other', label: 'Khác', icon: '📦', color: '#8DA4BE', id: 'other', emoji: '📦' },
+];
+
+// Font families
+export const FONTS = {
+  regular: 'BeVietnamPro_400Regular',
+  medium: 'BeVietnamPro_500Medium',
+  semiBold: 'BeVietnamPro_600SemiBold',
+  bold: 'BeVietnamPro_700Bold',
+
+  // alias tương thích code cũ
+  semibold: 'BeVietnamPro_600SemiBold',
+  extrabold: 'BeVietnamPro_800ExtraBold',
+};
+
+// Compatibility aliases for existing styles (để build không vỡ trong bước chuyển theme)
+Object.assign(DARK, {
+  silver: DARK.text2,
+  textPrimary: DARK.text1,
+  textSecondary: DARK.text2,
+  textMuted: DARK.text3,
+  navy: DARK.surface,
+  electric: DARK.accentMid,
+  cyan: DARK.accent,
+  warning: DARK.danger,
+  gray1: DARK.surface2,
+  gray2: DARK.surface2,
+});
+
+Object.assign(LIGHT, {
+  silver: LIGHT.text2,
+  textPrimary: LIGHT.text1,
+  textSecondary: LIGHT.text2,
+  textMuted: LIGHT.text3,
+  navy: LIGHT.surface,
+  electric: LIGHT.accentMid,
+  cyan: LIGHT.accent,
+  warning: LIGHT.danger,
+  gray1: LIGHT.surface2,
+  gray2: LIGHT.surface2,
+});
+
+Object.assign(DARK, {
+  accent: DARK.accent,
+  cardBorderStrong: DARK.border2,
+  trackMuted: DARK.border,
+  navBarBg: DARK.bg0,
+  navBarBorder: DARK.border,
+  txTitle: DARK.text2,
+  pillInnerBg: DARK.chipBg,
+  heroCardBorder: DARK.border2,
+  catItemSelectedExpense: DARK.dangerDim,
+  catItemSelectedIncome: DARK.successDim,
+  toggleExpenseBg: DARK.dangerDim,
+  toggleIncomeBg: DARK.successDim,
+  actionPillActiveBg: DARK.accentDim,
+  txIconBg: DARK.accentGlass,
+  pillBorder: DARK.border2,
+});
+
+Object.assign(LIGHT, {
+  accent: LIGHT.accent,
+  cardBorderStrong: LIGHT.border2,
+  trackMuted: LIGHT.border,
+  navBarBg: LIGHT.bg0,
+  navBarBorder: LIGHT.border,
+  txTitle: LIGHT.text2,
+  pillInnerBg: LIGHT.chipBg,
+  heroCardBorder: LIGHT.border2,
+  catItemSelectedExpense: LIGHT.dangerDim,
+  catItemSelectedIncome: LIGHT.successDim,
+  toggleExpenseBg: LIGHT.dangerDim,
+  toggleIncomeBg: LIGHT.successDim,
+  actionPillActiveBg: LIGHT.accentDim,
+  txIconBg: LIGHT.accentGlass,
+  pillBorder: LIGHT.border2,
+});
+
+/** @typedef {typeof DARK} AppColors */
 
 /** @param {boolean} isDark */
 export function getAppColors(isDark) {
-  return isDark ? DARK_COLORS : LIGHT_COLORS;
+  return isDark ? DARK : LIGHT;
 }
 
-/** Expo template / useThemeColor — system light-dark (separate from in-app theme switch) */
+export const DARK_COLORS = DARK;
+export const LIGHT_COLORS = LIGHT;
+
+/** Expo template hook compatibility */
 export const Colors = {
   light: {
-    text: LIGHT_COLORS.textPrimary,
-    background: LIGHT_COLORS.bg0,
-    tint: LIGHT_COLORS.accent,
-    icon: LIGHT_COLORS.silver,
-    tabIconDefault: LIGHT_COLORS.silver,
-    tabIconSelected: LIGHT_COLORS.accent,
+    text: LIGHT.text1,
+    background: LIGHT.bg0,
+    tint: LIGHT.accent,
+    icon: LIGHT.text2,
+    tabIconDefault: LIGHT.text3,
+    tabIconSelected: LIGHT.accent,
   },
   dark: {
-    text: DARK_COLORS.textPrimary,
-    background: DARK_COLORS.bg0,
-    tint: DARK_COLORS.accent,
-    icon: DARK_COLORS.silver,
-    tabIconDefault: DARK_COLORS.silver,
-    tabIconSelected: DARK_COLORS.accent,
+    text: DARK.text1,
+    background: DARK.bg0,
+    tint: DARK.accent,
+    icon: DARK.text2,
+    tabIconDefault: DARK.text3,
+    tabIconSelected: DARK.accent,
   },
-};
-
-/** @deprecated Prefer useAppColors() for theme-aware UI */
-export const COLORS = DARK_COLORS;
-
-export const CATEGORIES = [
-  { id: "an_uong", label: "Ăn uống", emoji: "🍜" },
-  { id: "di_chuyen", label: "Di chuyển", emoji: "🚗" },
-  { id: "hoc_tap", label: "Học tập", emoji: "📚" },
-  { id: "giai_tri", label: "Giải trí", emoji: "🎮" },
-  { id: "suc_khoe", label: "Sức khỏe", emoji: "🏥" },
-  { id: "mua_sam", label: "Mua sắm", emoji: "🛍" },
-  { id: "tien_ich", label: "Tiện ích", emoji: "💡" },
-  { id: "khac", label: "Khác", emoji: "📦" },
-];
-
-export const FONTS = {
-  regular: 400,
-  medium: 500,
-  semibold: 600,
-  bold: 700,
-  extrabold: 800,
 };

@@ -1,140 +1,235 @@
 // app/index.jsx
-
-import { useRouter } from "expo-router";
-import { useMemo } from "react";
+import { useState } from "react";
 import {
-  ScrollView,
-  StyleSheet,
-  Text,
-  TouchableOpacity,
   View,
+  Text,
+  ScrollView,
+  TouchableOpacity,
+  StyleSheet,
+  Modal,
+  TextInput,
+  KeyboardAvoidingView,
+  Platform,
 } from "react-native";
+import { useRouter } from "expo-router";
 import { SafeAreaView } from "react-native-safe-area-context";
+import makeHomeStyles from "../styles/homeStyles";
+import NavBar from "../components/NavBar";
+import { SettingsIcon } from "../components/icons";
 
-import { CATEGORIES } from "../constants/theme";
-import { useAppColors } from "../context/AppThemeContext";
-import { useAuth } from "../context/AuthContext";
 import useStore from "../store/useStore";
-
-const formatMoney = (amount) => {
-  return Math.abs(amount).toLocaleString("vi-VN");
-};
-
-const getCategoryEmoji = (categoryId) => {
-  const cat = CATEGORIES.find((c) => c.id === categoryId);
-  return cat ? cat.emoji : "📦";
-};
-
-function getDisplayName(user) {
-  if (!user) return "Bạn";
-  const meta = user.user_metadata ?? {};
-  const fromMeta =
-    meta.username?.trim?.() ||
-    meta.display_name?.trim?.() ||
-    meta.full_name?.trim?.();
-  if (fromMeta) return fromMeta;
-  const email = user.email ?? "";
-  return email ? email.split("@")[0] : "Bạn";
-}
+import { formatMoney, formatMoneyHero } from "../utils/formatMoney";
+import { getCategoryEmoji, getCategoryLabel } from "../utils/categoryUtils";
 
 export default function HomeScreen() {
   const router = useRouter();
-  const colors = useAppColors();
-  const { session, signOut } = useAuth();
-  const displayName = getDisplayName(session?.user);
+  const colors = useStore((s) => s.colors);
+  const styles = makeHomeStyles(colors);
+  const categories = useStore((s) => s.categories);
+  const goals = useStore((s) => s.goals);
+  const addGoal = useStore((s) => s.addGoal);
+  const addGoalProgress = useStore((s) => s.addGoalProgress);
 
   const transactions = useStore((state) => state.transactions);
   const debts = useStore((state) => state.debts);
   const getMonthlySummary = useStore((state) => state.getMonthlySummary);
+  const headerStyles = makeHeaderStyles(colors);
+  const currentMonthStr = useStore((s) => s.currentMonth);
 
   const { income, expense, balance } = getMonthlySummary();
+
+  // Trend (so sánh balance so với tháng trước)
+  const [y, m] = currentMonthStr.split("-").map(Number);
+  const prevMonth = new Date(y, m - 2, 1); // m-1 (JS: month 0-based)
+  const prevMonthStr = `${prevMonth.getFullYear()}-${String(prevMonth.getMonth() + 1).padStart(2, "0")}`;
+
+  const currTx = transactions.filter((tx) =>
+    tx.date.startsWith(currentMonthStr),
+  );
+  const prevTx = transactions.filter((tx) => tx.date.startsWith(prevMonthStr));
+
+  const currIncome = currTx
+    .filter((tx) => tx.type === "income")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const currExpense = currTx
+    .filter((tx) => tx.type === "expense")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const prevIncome = prevTx
+    .filter((tx) => tx.type === "income")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+  const prevExpense = prevTx
+    .filter((tx) => tx.type === "expense")
+    .reduce((sum, tx) => sum + tx.amount, 0);
+
+  const currBalance = currIncome - currExpense;
+  const prevBalance = prevIncome - prevExpense;
+
+  const trendPercent =
+    prevBalance !== 0
+      ? ((currBalance - prevBalance) / Math.abs(prevBalance)) * 100
+      : currBalance !== 0
+        ? 100
+        : 0;
+  const trendLabel = `${trendPercent >= 0 ? "+" : ""}${trendPercent.toFixed(1)}%`;
   const recentTx = transactions.slice(0, 5);
   const totalDebt = debts.reduce((sum, d) => sum + d.remaining_amount, 0);
+  const [showGoalModal, setShowGoalModal] = useState(false);
+  const [goalTitle, setGoalTitle] = useState("");
+  const [goalTarget, setGoalTarget] = useState("");
+  const [goalSaved, setGoalSaved] = useState("");
+  const [goalProgressInput, setGoalProgressInput] = useState("");
+  const [showProgressModal, setShowProgressModal] = useState(false);
+  const topGoal = goals[0];
 
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const saveGoal = () => {
+    const targetAmount = parseInt(goalTarget || "0", 10);
+    const savedAmount = parseInt(goalSaved || "0", 10);
+    if (!goalTitle.trim() || targetAmount <= 0) return;
+    addGoal(goalTitle, targetAmount, savedAmount);
+    setGoalTitle("");
+    setGoalTarget("");
+    setGoalSaved("");
+    setShowGoalModal(false);
+  };
+
+  const saveGoalProgress = () => {
+    if (!topGoal) return;
+    const progressAmount = parseInt(goalProgressInput || "0", 10);
+    if (progressAmount <= 0) return;
+    addGoalProgress(topGoal.id, progressAmount);
+    setGoalProgressInput("");
+    setShowProgressModal(false);
+  };
 
   return (
     <SafeAreaView style={styles.safe}>
-      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
-        <View style={styles.header}>
-          <View style={{ flex: 1 }}>
-            <Text style={styles.greeting}>XIN CHÀO</Text>
-            <Text style={styles.username}>{displayName} 👋</Text>
-            <TouchableOpacity
-              onPress={() => router.push("/settings")}
-              hitSlop={12}
-            >
-              <Text style={styles.settingsLink}>Cài đặt</Text>
-            </TouchableOpacity>
-            <TouchableOpacity onPress={() => signOut()} hitSlop={12}>
-              <Text style={styles.signOut}>Đăng xuất</Text>
-            </TouchableOpacity>
-          </View>
-          <View style={styles.avatarRing}>
-            <View style={styles.avatarInner}>
-              <Text style={styles.avatarText}>
-                {(displayName[0] || "?").toUpperCase()}
-              </Text>
-            </View>
-          </View>
-        </View>
+      {/* ── Header với nút Settings ── */}
+      <View style={headerStyles.header}>
+        <Text style={headerStyles.appName}>SpendingTracker</Text>
+        <TouchableOpacity
+          style={headerStyles.settingsBtn}
+          onPress={() => router.push("/settings")}
+        >
+          <SettingsIcon size={18} color={colors.text2} />
+        </TouchableOpacity>
+      </View>
 
+      <ScrollView style={styles.scroll} showsVerticalScrollIndicator={false}>
+        {/* Balance Card */}
         <View style={styles.heroCard}>
           <Text style={styles.heroLabel}>SỐ DƯ HIỆN TẠI</Text>
+          <View style={styles.heroAmountRow}>
+            <Text style={styles.heroAmount}>
+              {formatMoneyHero(Math.abs(balance))}
+            </Text>
+            <Text style={styles.heroCur}>đ</Text>
+          </View>
           <Text
             style={[
-              styles.heroAmount,
-              { color: balance < 0 ? colors.danger : colors.textPrimary },
+              styles.heroSub,
+              { color: trendPercent >= 0 ? colors.success : colors.danger },
             ]}
           >
-            <Text style={styles.heroCur}>₫</Text>
-            {balance < 0 ? "-" : ""}
-            {formatMoney(Math.abs(balance))}
-          </Text>
-          <Text style={styles.heroSub}>
-            Tháng {new Date().getMonth() + 1} · {new Date().getFullYear()}
+            {trendLabel}
           </Text>
 
           <View style={styles.pillRow}>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>THU</Text>
               <Text style={[styles.pillVal, { color: colors.success }]}>
-                +{formatMoney(income)}
+                {formatMoney(income, "signed")}
               </Text>
             </View>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>CHI</Text>
               <Text style={[styles.pillVal, { color: colors.danger }]}>
-                -{formatMoney(expense)}
+                {formatMoney(-expense, "signed")}
               </Text>
             </View>
             <View style={styles.pill}>
               <Text style={styles.pillLabel}>NỢ</Text>
               <Text style={[styles.pillVal, { color: colors.danger }]}>
-                {formatMoney(totalDebt)}
+                {formatMoney(-totalDebt, "signed")}
               </Text>
             </View>
           </View>
         </View>
 
-        <View style={styles.qaRow}>
-          {[
-            { icon: "➕", label: "Thêm", route: "/add" },
-            { icon: "📊", label: "Thống kê", route: "/stats" },
-            { icon: "💳", label: "Nợ", route: "/debt" },
-            { icon: "🎯", label: "Ngân sách", route: "/budget" },
-          ].map((item) => (
-            <TouchableOpacity
-              key={item.label}
-              style={styles.qaBtn}
-              onPress={() => router.push(item.route)}
-            >
-              <Text style={styles.qaIcon}>{item.icon}</Text>
-              <Text style={styles.qaLabel}>{item.label}</Text>
-            </TouchableOpacity>
-          ))}
-        </View>
+        {/* Goal shortcut row */}
+        <TouchableOpacity
+          style={styles.addRow}
+          onPress={() => setShowGoalModal(true)}
+        >
+          <View style={styles.addRowLeft}>
+            <View style={styles.addRowIcon}>
+              <Text
+                style={{
+                  fontSize: 18,
+                  color: colors.accent,
+                  fontWeight: "800",
+                }}
+              >
+                🎯
+              </Text>
+            </View>
+            <View>
+              <Text style={styles.addRowTitle}>Đặt mục tiêu</Text>
+              <Text style={styles.addRowSub}>Theo dõi món đồ bạn muốn mua</Text>
+            </View>
+          </View>
+          <Text style={styles.addRowArrow}>›</Text>
+        </TouchableOpacity>
+        {topGoal && (
+          <View style={styles.goalCard}>
+            <View style={styles.goalHead}>
+              <View>
+                <Text style={styles.goalTitle}>{topGoal.title}</Text>
+                <Text style={styles.goalMeta}>Mục tiêu mua sắm</Text>
+              </View>
+              <Text style={styles.goalAmount}>
+                {formatMoney(topGoal.savedAmount)} /{" "}
+                {formatMoney(topGoal.targetAmount)}
+              </Text>
+            </View>
+            <View style={styles.goalTrack}>
+              <View
+                style={[
+                  styles.goalFill,
+                  {
+                    width: `${Math.min(
+                      100,
+                      Math.round(
+                        (topGoal.savedAmount /
+                          Math.max(1, topGoal.targetAmount)) *
+                          100,
+                      ),
+                    )}%`,
+                  },
+                ]}
+              />
+            </View>
+            <View style={styles.goalFoot}>
+              <Text style={styles.goalPercent}>
+                {Math.min(
+                  100,
+                  Math.round(
+                    (topGoal.savedAmount / Math.max(1, topGoal.targetAmount)) *
+                      100,
+                  ),
+                )}
+                %
+              </Text>
+              <TouchableOpacity
+                style={styles.goalAddBtn}
+                onPress={() => setShowProgressModal(true)}
+              >
+                <Text style={styles.goalAddText}>+ Nạp thêm</Text>
+              </TouchableOpacity>
+            </View>
+          </View>
+        )}
 
+        {/* Recent Transactions */}
         <View style={styles.secHead}>
           <Text style={styles.secTitle}>Gần đây</Text>
           <TouchableOpacity onPress={() => router.push("/stats")}>
@@ -152,15 +247,17 @@ export default function HomeScreen() {
         ) : (
           recentTx.map((tx) => (
             <View key={tx.id} style={styles.txItem}>
-              <View style={[styles.txIcon, { backgroundColor: colors.txIconBg }]}>
+              <View style={styles.txIcon}>
                 <Text style={styles.txEmoji}>
-                  {getCategoryEmoji(tx.category)}
+                  {getCategoryEmoji(tx.category, categories)}
                 </Text>
               </View>
               <View style={styles.txInfo}>
-                <Text style={styles.txName}>{tx.note || tx.category}</Text>
+                <Text style={styles.txName}>
+                  {tx.note || getCategoryLabel(tx.category, categories)}
+                </Text>
                 <Text style={styles.txMeta}>
-                  {tx.category} · {tx.date}
+                  {getCategoryLabel(tx.category, categories)} · {tx.date}
                 </Text>
               </View>
               <Text
@@ -172,8 +269,10 @@ export default function HomeScreen() {
                   },
                 ]}
               >
-                {tx.type === "income" ? "+" : "-"}
-                {formatMoney(tx.amount)}
+                {formatMoney(
+                  tx.type === "income" ? tx.amount : -tx.amount,
+                  "signed",
+                )}
               </Text>
             </View>
           ))
@@ -182,289 +281,132 @@ export default function HomeScreen() {
         <View style={{ height: 100 }} />
       </ScrollView>
 
-      <View style={styles.bottomNav}>
-        {[
-          { icon: "🏠", label: "Home", route: "/" },
-          { icon: "📊", label: "Stats", route: "/stats" },
-          { icon: "➕", label: "Add", route: "/add" },
-          { icon: "💳", label: "Nợ", route: "/debt" },
-        ].map((item) => {
-          const isActive = item.route === "/";
-          return (
-            <TouchableOpacity
-              key={item.label}
-              style={styles.navItem}
-              onPress={() => router.push(item.route)}
-            >
-              <Text style={[styles.navIcon, isActive && styles.navIconActive]}>
-                {item.icon}
-              </Text>
-              <View style={[styles.navDot, isActive && styles.navDotActive]} />
-              <Text
-                style={[styles.navLabel, isActive && styles.navLabelActive]}
-              >
-                {item.label}
-              </Text>
-            </TouchableOpacity>
-          );
-        })}
-      </View>
+      <NavBar activeRoute="/" />
+
+      <Modal visible={showGoalModal} transparent animationType="slide">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Đặt mục tiêu mua sắm</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={goalTitle}
+                onChangeText={setGoalTitle}
+                placeholder="Tên món đồ (VD: iPad, xe máy...)"
+                placeholderTextColor={colors.text3}
+              />
+              <TextInput
+                style={styles.modalInput}
+                value={goalTarget}
+                onChangeText={(v) => setGoalTarget(v.replace(/[^\d]/g, ""))}
+                placeholder="Số tiền mục tiêu"
+                keyboardType="numeric"
+                placeholderTextColor={colors.text3}
+              />
+              <TextInput
+                style={styles.modalInput}
+                value={goalSaved}
+                onChangeText={(v) => setGoalSaved(v.replace(/[^\d]/g, ""))}
+                placeholder="Đã để dành (tuỳ chọn)"
+                keyboardType="numeric"
+                placeholderTextColor={colors.text3}
+              />
+              <View style={styles.modalRow}>
+                <TouchableOpacity
+                  style={styles.modalBtn}
+                  onPress={() => setShowGoalModal(false)}
+                >
+                  <Text style={styles.modalBtnText}>Huỷ</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnPrimary]}
+                  onPress={saveGoal}
+                >
+                  <Text
+                    style={[styles.modalBtnText, styles.modalBtnTextPrimary]}
+                  >
+                    Lưu
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
+
+      <Modal visible={showProgressModal} transparent animationType="slide">
+        <KeyboardAvoidingView
+          behavior={Platform.OS === "ios" ? "padding" : "height"}
+          keyboardVerticalOffset={Platform.OS === "ios" ? 40 : 0}
+          style={{ flex: 1 }}
+        >
+          <View style={styles.modalOverlay}>
+            <View style={styles.modalBox}>
+              <Text style={styles.modalTitle}>Nạp thêm cho mục tiêu</Text>
+              <TextInput
+                style={styles.modalInput}
+                value={goalProgressInput}
+                onChangeText={(v) =>
+                  setGoalProgressInput(v.replace(/[^\d]/g, ""))
+                }
+                placeholder="Số tiền vừa để dành"
+                keyboardType="numeric"
+                placeholderTextColor={colors.text3}
+              />
+              <View style={styles.modalRow}>
+                <TouchableOpacity
+                  style={styles.modalBtn}
+                  onPress={() => setShowProgressModal(false)}
+                >
+                  <Text style={styles.modalBtnText}>Huỷ</Text>
+                </TouchableOpacity>
+                <TouchableOpacity
+                  style={[styles.modalBtn, styles.modalBtnPrimary]}
+                  onPress={saveGoalProgress}
+                >
+                  <Text
+                    style={[styles.modalBtnText, styles.modalBtnTextPrimary]}
+                  >
+                    Cập nhật
+                  </Text>
+                </TouchableOpacity>
+              </View>
+            </View>
+          </View>
+        </KeyboardAvoidingView>
+      </Modal>
     </SafeAreaView>
   );
 }
 
-/** @param {import('../constants/theme').AppColors} c */
-function createStyles(c) {
-  return StyleSheet.create({
-    safe: {
-      flex: 1,
-      backgroundColor: c.bg0,
-    },
-    scroll: {
-      flex: 1,
-    },
+// Style riêng cho header (để dùng đúng mode theme hiện tại)
+const makeHeaderStyles = (colors) =>
+  StyleSheet.create({
     header: {
       flexDirection: "row",
+      alignItems: "center",
       justifyContent: "space-between",
-      alignItems: "flex-start",
       paddingHorizontal: 20,
-      paddingTop: 16,
+      paddingVertical: 12,
     },
-    greeting: {
-      fontSize: 10,
-      color: c.silver,
-      letterSpacing: 2,
-      opacity: 0.6,
+    appName: {
+      fontSize: 18,
+      fontFamily: "BeVietnamPro_700Bold",
+      color: colors.textPrimary,
     },
-    username: {
-      fontSize: 22,
-      color: c.textPrimary,
-      fontWeight: "700",
-      marginTop: 2,
-    },
-    settingsLink: {
-      marginTop: 8,
-      fontSize: 11,
-      color: c.silver,
-      letterSpacing: 0.5,
-      opacity: 0.85,
-    },
-    signOut: {
-      marginTop: 6,
-      fontSize: 11,
-      color: c.accent,
-      letterSpacing: 0.5,
-    },
-    avatarRing: {
-      width: 42,
-      height: 42,
-      borderRadius: 21,
-      borderWidth: 1.5,
-      borderColor: c.accent,
+    settingsBtn: {
+      width: 40,
+      height: 40,
+      borderRadius: 10,
+      backgroundColor: colors.surface2 || colors.gray1,
       alignItems: "center",
       justifyContent: "center",
     },
-    avatarInner: {
-      width: 32,
-      height: 32,
-      borderRadius: 16,
-      backgroundColor: c.navy,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    avatarText: {
-      fontSize: 14,
-      fontWeight: "700",
-      color: c.accent,
-    },
-    heroCard: {
-      margin: 20,
-      backgroundColor: c.bg2,
-      borderWidth: 1,
-      borderColor: c.heroCardBorder,
-      borderRadius: 22,
-      padding: 20,
-    },
-    heroLabel: {
-      fontSize: 9,
-      color: c.silver,
-      letterSpacing: 2.5,
-      opacity: 0.5,
-    },
-    heroAmount: {
-      fontSize: 32,
-      color: c.textPrimary,
-      fontWeight: "400",
-      marginTop: 6,
-      marginBottom: 2,
-      letterSpacing: -1,
-    },
-    heroCur: {
-      fontSize: 16,
-      color: c.accent,
-    },
-    heroSub: {
-      fontSize: 10,
-      color: c.silver,
-      opacity: 0.4,
-    },
-    pillRow: {
-      flexDirection: "row",
-      gap: 8,
-      marginTop: 14,
-    },
-    pill: {
-      flex: 1,
-      backgroundColor: c.pillInnerBg,
-      borderWidth: 1,
-      borderColor: c.pillBorder,
-      borderRadius: 12,
-      padding: 10,
-    },
-    pillLabel: {
-      fontSize: 8,
-      color: c.silver,
-      opacity: 0.4,
-      letterSpacing: 1.5,
-    },
-    pillVal: {
-      fontSize: 13,
-      marginTop: 3,
-      fontWeight: "500",
-    },
-    qaRow: {
-      flexDirection: "row",
-      gap: 8,
-      paddingHorizontal: 20,
-      marginBottom: 4,
-    },
-    qaBtn: {
-      flex: 1,
-      backgroundColor: c.bg3,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: 14,
-      padding: 12,
-      alignItems: "center",
-      gap: 5,
-    },
-    qaIcon: { fontSize: 18 },
-    qaLabel: {
-      fontSize: 8,
-      color: c.silver,
-      opacity: 0.5,
-      letterSpacing: 0.8,
-    },
-    secHead: {
-      flexDirection: "row",
-      justifyContent: "space-between",
-      alignItems: "center",
-      paddingHorizontal: 20,
-      paddingTop: 16,
-      paddingBottom: 8,
-    },
-    secTitle: {
-      fontSize: 13,
-      color: c.textPrimary,
-      fontWeight: "600",
-    },
-    secMore: {
-      fontSize: 10,
-      color: c.accent,
-      letterSpacing: 1,
-    },
-    emptyBox: {
-      margin: 20,
-      padding: 24,
-      backgroundColor: c.bg3,
-      borderRadius: 16,
-      borderWidth: 1,
-      borderColor: c.border,
-      alignItems: "center",
-    },
-    emptyText: {
-      color: c.silver,
-      opacity: 0.5,
-      textAlign: "center",
-      fontSize: 13,
-      lineHeight: 22,
-    },
-    txItem: {
-      flexDirection: "row",
-      alignItems: "center",
-      paddingHorizontal: 20,
-      paddingVertical: 10,
-      gap: 12,
-    },
-    txIcon: {
-      width: 38,
-      height: 38,
-      borderRadius: 12,
-      alignItems: "center",
-      justifyContent: "center",
-    },
-    txEmoji: { fontSize: 16 },
-    txInfo: { flex: 1 },
-    txName: {
-      fontSize: 13,
-      color: c.txTitle,
-      fontWeight: "500",
-    },
-    txMeta: {
-      fontSize: 10,
-      color: c.silver,
-      opacity: 0.4,
-      marginTop: 2,
-    },
-    txAmount: {
-      fontSize: 13,
-      fontWeight: "500",
-    },
-    bottomNav: {
-      position: "absolute",
-      bottom: 0,
-      left: 0,
-      right: 0,
-      flexDirection: "row",
-      justifyContent: "space-around",
-      paddingTop: 10,
-      paddingBottom: 28,
-      paddingHorizontal: 8,
-      backgroundColor: c.navBarBg,
-      borderTopWidth: 1,
-      borderTopColor: c.navBarBorder,
-    },
-    navItem: {
-      alignItems: "center",
-      gap: 3,
-    },
-    navIcon: {
+    settingsIcon: {
       fontSize: 20,
-      opacity: 0.3,
-    },
-    navIconActive: {
-      opacity: 1,
-    },
-    navDot: {
-      width: 4,
-      height: 4,
-      borderRadius: 2,
-      backgroundColor: c.accent,
-      opacity: 0,
-    },
-    navDotActive: {
-      opacity: 1,
-    },
-    navLabel: {
-      fontSize: 8,
-      color: c.silver,
-      opacity: 0.3,
-      letterSpacing: 1,
-      textTransform: "uppercase",
-    },
-    navLabelActive: {
-      color: c.accent,
-      opacity: 1,
     },
   });
-}

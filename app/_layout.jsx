@@ -19,7 +19,9 @@ function RootNavigation() {
 
   const loadTransactions = useStore((state) => state.loadTransactions);
   const loadDebts = useStore((state) => state.loadDebts);
+  const loadCategories = useStore((state) => state.loadCategories);
   const clearLocalData = useStore((state) => state.clearLocalData);
+  const setCloudSyncEnabled = useStore((state) => state.setCloudSyncEnabled);
 
   useEffect(() => {
     if (!initialized) return;
@@ -49,19 +51,34 @@ function RootNavigation() {
   ]);
 
   useEffect(() => {
-    if (!session?.user?.id || !isSupabaseConfigured) return;
+    setCloudSyncEnabled(Boolean(session?.user?.id && isSupabaseConfigured));
+  }, [session?.user?.id, isSupabaseConfigured, setCloudSyncEnabled]);
+
+  useEffect(() => {
     let cancelled = false;
     (async () => {
       await initDatabase();
-      await migrateLocalToCloud(session.user.id);
-      if (cancelled) return;
-      await loadTransactions();
-      await loadDebts();
+      loadCategories();
+      if (session?.user?.id && isSupabaseConfigured) {
+        await migrateLocalToCloud(session.user.id);
+        if (cancelled) return;
+        await loadTransactions();
+        await loadDebts();
+      } else if (!isSupabaseConfigured) {
+        loadTransactions();
+        loadDebts();
+      }
     })();
     return () => {
       cancelled = true;
     };
-  }, [session?.user?.id, isSupabaseConfigured, loadTransactions, loadDebts]);
+  }, [
+    session?.user?.id,
+    isSupabaseConfigured,
+    loadTransactions,
+    loadDebts,
+    loadCategories,
+  ]);
 
   useEffect(() => {
     if (!session) {
