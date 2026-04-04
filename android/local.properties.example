@@ -1,0 +1,4 @@
+# Sao chép thành local.properties và sửa sdk.dir cho đúng máy bạn.
+# File local.properties không commit (đã có trong android/.gitignore).
+
+sdk.dir=C\:\\Users\\YOUR_USER\\AppData\\Local\\Android\\Sdk
