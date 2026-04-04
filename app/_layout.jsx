@@ -1,7 +1,10 @@
 import { useEffect } from "react";
 import { Stack, useRouter, useSegments } from "expo-router";
 import { StatusBar } from "expo-status-bar";
-import { AppThemeProvider, useAppTheme } from "../context/AppThemeContext";
+import {
+  AppThemeProvider,
+  useAppTheme,
+} from "../context/AppThemeContext";
 import { AuthProvider, useAuth } from "../context/AuthContext";
 import { initDatabase } from "../database/db";
 import { migrateLocalToCloud } from "../lib/migrateLocalToSupabase";
@@ -10,6 +13,19 @@ import useStore from "../store/useStore";
 function ThemedStatusBar() {
   const { isDark } = useAppTheme();
   return <StatusBar style={isDark ? "light" : "dark"} />;
+}
+
+/** Đồng bộ Zustand (nguồn màu chính) → AppThemeContext cho StatusBar. */
+function ThemeSync() {
+  const storeDark = useStore((s) => s.isDark);
+  const { setIsDark, ready } = useAppTheme();
+
+  useEffect(() => {
+    if (!ready) return;
+    setIsDark(storeDark);
+  }, [storeDark, ready, setIsDark]);
+
+  return null;
 }
 
 function RootNavigation() {
@@ -88,6 +104,7 @@ function RootNavigation() {
 
   return (
     <>
+      <ThemeSync />
       <ThemedStatusBar />
       <Stack screenOptions={{ headerShown: false }}>
         <Stack.Screen name="register" />

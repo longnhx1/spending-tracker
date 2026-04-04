@@ -6,29 +6,29 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAppColors } from "../context/AppThemeContext";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../hooks/useTheme";
 import { formatAuthAlertMessage } from "../lib/formatAuthAlertMessage";
+import makeAuthStyles from "../styles/authStyles";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function RegisterScreen() {
   const router = useRouter();
-  const colors = useAppColors();
+  const { colors } = useTheme();
   const { signUp, isSupabaseConfigured } = useAuth();
   const [username, setUsername] = useState("");
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
 
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const styles = useMemo(() => makeAuthStyles(colors), [colors]);
 
   const submit = async () => {
     if (!isSupabaseConfigured) {
@@ -78,8 +78,8 @@ export default function RegisterScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scroll}
         >
-          <Text style={styles.title}>SpendingTracker</Text>
-          <Text style={styles.sub}>Tạo tài khoản để đồng bộ dữ liệu.</Text>
+          <Text style={styles.brandTitle}>SpendingTracker</Text>
+          <Text style={styles.brandSub}>Tạo tài khoản để đồng bộ dữ liệu.</Text>
 
           {!isSupabaseConfigured && (
             <View style={styles.warn}>
@@ -91,128 +91,62 @@ export default function RegisterScreen() {
             </View>
           )}
 
-          <Text style={styles.label}>USERNAME</Text>
-          <TextInput
-            style={styles.input}
-            value={username}
-            onChangeText={setUsername}
-            autoCapitalize="none"
-            autoComplete="username"
-            placeholder="Tên hiển thị"
-            placeholderTextColor={colors.textMuted}
-          />
+          <View style={styles.card}>
+            <Text style={styles.label}>USERNAME</Text>
+            <TextInput
+              style={styles.input}
+              value={username}
+              onChangeText={setUsername}
+              autoCapitalize="none"
+              autoComplete="username"
+              placeholder="Tên hiển thị"
+              placeholderTextColor={colors.text3}
+            />
 
-          <Text style={styles.label}>EMAIL</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            placeholder="you@example.com"
-            placeholderTextColor={colors.textMuted}
-          />
+            <Text style={styles.label}>EMAIL</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              placeholder="you@example.com"
+              placeholderTextColor={colors.text3}
+            />
 
-          <Text style={styles.label}>PASSWORD</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="new-password"
-            placeholder="••••••••"
-            placeholderTextColor={colors.textMuted}
-          />
+            <Text style={styles.label}>MẬT KHẨU</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="new-password"
+              placeholder="••••••••"
+              placeholderTextColor={colors.text3}
+            />
 
-          <TouchableOpacity
-            style={[styles.btn, loading && styles.btnDisabled]}
-            onPress={submit}
-            disabled={loading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.btnText}>Create</Text>
-            )}
-          </TouchableOpacity>
+            <TouchableOpacity
+              style={[styles.btn, loading && styles.btnDisabled]}
+              onPress={submit}
+              disabled={loading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.btnText}>ĐĂNG KÝ</Text>
+              )}
+            </TouchableOpacity>
+          </View>
 
           <TouchableOpacity
             style={styles.switchBtn}
             onPress={() => router.push("/login")}
           >
-            <Text style={styles.switchText}>Login</Text>
+            <Text style={styles.switchText}>Đã có tài khoản? Đăng nhập</Text>
           </TouchableOpacity>
         </ScrollView>
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-/** @param {import('../constants/theme').AppColors} c */
-function createStyles(c) {
-  return StyleSheet.create({
-    safe: { flex: 1, backgroundColor: c.bg0 },
-    flex: { flex: 1 },
-    scroll: {
-      padding: 24,
-      paddingTop: 48,
-    },
-    title: {
-      fontSize: 26,
-      fontWeight: "700",
-      color: c.textPrimary,
-      letterSpacing: -0.5,
-    },
-    sub: {
-      marginTop: 8,
-      fontSize: 14,
-      color: c.silver,
-      opacity: 0.7,
-      lineHeight: 20,
-      marginBottom: 28,
-    },
-    warn: {
-      backgroundColor: "rgba(255,184,0,0.12)",
-      borderWidth: 1,
-      borderColor: "rgba(255,184,0,0.35)",
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 20,
-    },
-    warnText: { color: c.warning, fontSize: 13, lineHeight: 20 },
-    label: {
-      fontSize: 9,
-      color: c.silver,
-      opacity: 0.5,
-      letterSpacing: 2,
-      marginBottom: 8,
-    },
-    input: {
-      backgroundColor: c.bg3,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: 12,
-      padding: 14,
-      color: c.textPrimary,
-      fontSize: 15,
-      marginBottom: 16,
-    },
-    btn: {
-      backgroundColor: c.electric,
-      borderRadius: 14,
-      padding: 16,
-      alignItems: "center",
-      marginTop: 8,
-    },
-    btnDisabled: { opacity: 0.7 },
-    btnText: {
-      color: "#fff",
-      fontSize: 13,
-      fontWeight: "700",
-      letterSpacing: 1.2,
-    },
-    switchBtn: { marginTop: 20, alignItems: "center" },
-    switchText: { color: c.accent, fontSize: 13 },
-  });
 }

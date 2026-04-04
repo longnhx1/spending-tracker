@@ -6,29 +6,29 @@ import {
   KeyboardAvoidingView,
   Platform,
   ScrollView,
-  StyleSheet,
   Text,
   TextInput,
   TouchableOpacity,
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { useAppColors } from "../context/AppThemeContext";
 import { useAuth } from "../context/AuthContext";
+import { useTheme } from "../hooks/useTheme";
 import { formatAuthAlertMessage } from "../lib/formatAuthAlertMessage";
+import makeAuthStyles from "../styles/authStyles";
 
 const EMAIL_RE = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
 
 export default function LoginScreen() {
   const router = useRouter();
-  const colors = useAppColors();
+  const { colors } = useTheme();
   const { signIn, signInWithGoogle, isSupabaseConfigured } = useAuth();
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [loading, setLoading] = useState(false);
   const [googleLoading, setGoogleLoading] = useState(false);
 
-  const styles = useMemo(() => createStyles(colors), [colors]);
+  const styles = useMemo(() => makeAuthStyles(colors), [colors]);
 
   const submit = async () => {
     if (!isSupabaseConfigured) {
@@ -91,8 +91,8 @@ export default function LoginScreen() {
           keyboardShouldPersistTaps="handled"
           contentContainerStyle={styles.scroll}
         >
-          <Text style={styles.title}>SpendingTracker</Text>
-          <Text style={styles.sub}>
+          <Text style={styles.brandTitle}>SpendingTracker</Text>
+          <Text style={styles.brandSub}>
             Đăng nhập để đồng bộ dữ liệu giữa các thiết bị.
           </Text>
 
@@ -106,61 +106,63 @@ export default function LoginScreen() {
             </View>
           )}
 
-          <TouchableOpacity
-            style={[
-              styles.googleBtn,
-              (loading || googleLoading) && styles.btnDisabled,
-            ]}
-            onPress={onGoogle}
-            disabled={loading || googleLoading}
-          >
-            {googleLoading ? (
-              <ActivityIndicator color={colors.textPrimary} />
-            ) : (
-              <Text style={styles.googleBtnText}>Đăng nhập với Google</Text>
-            )}
-          </TouchableOpacity>
+          <View style={styles.card}>
+            <TouchableOpacity
+              style={[
+                styles.googleBtn,
+                (loading || googleLoading) && styles.btnDisabled,
+              ]}
+              onPress={onGoogle}
+              disabled={loading || googleLoading}
+            >
+              {googleLoading ? (
+                <ActivityIndicator color={colors.text1} />
+              ) : (
+                <Text style={styles.googleBtnText}>Đăng nhập với Google</Text>
+              )}
+            </TouchableOpacity>
 
-          <View style={styles.dividerRow}>
-            <View style={styles.divider} />
-            <Text style={styles.dividerText}>hoặc email</Text>
-            <View style={styles.divider} />
+            <View style={styles.dividerRow}>
+              <View style={styles.divider} />
+              <Text style={styles.dividerText}>hoặc email</Text>
+              <View style={styles.divider} />
+            </View>
+
+            <Text style={styles.label}>EMAIL</Text>
+            <TextInput
+              style={styles.input}
+              value={email}
+              onChangeText={setEmail}
+              autoCapitalize="none"
+              keyboardType="email-address"
+              autoComplete="email"
+              placeholder="you@example.com"
+              placeholderTextColor={colors.text3}
+            />
+
+            <Text style={styles.label}>MẬT KHẨU</Text>
+            <TextInput
+              style={styles.input}
+              value={password}
+              onChangeText={setPassword}
+              secureTextEntry
+              autoComplete="password"
+              placeholder="••••••••"
+              placeholderTextColor={colors.text3}
+            />
+
+            <TouchableOpacity
+              style={[styles.btn, loading && styles.btnDisabled]}
+              onPress={submit}
+              disabled={loading || googleLoading}
+            >
+              {loading ? (
+                <ActivityIndicator color="#fff" />
+              ) : (
+                <Text style={styles.btnText}>ĐĂNG NHẬP</Text>
+              )}
+            </TouchableOpacity>
           </View>
-
-          <Text style={styles.label}>EMAIL</Text>
-          <TextInput
-            style={styles.input}
-            value={email}
-            onChangeText={setEmail}
-            autoCapitalize="none"
-            keyboardType="email-address"
-            autoComplete="email"
-            placeholder="you@example.com"
-            placeholderTextColor={colors.textMuted}
-          />
-
-          <Text style={styles.label}>MẬT KHẨU</Text>
-          <TextInput
-            style={styles.input}
-            value={password}
-            onChangeText={setPassword}
-            secureTextEntry
-            autoComplete="password"
-            placeholder="••••••••"
-            placeholderTextColor={colors.textMuted}
-          />
-
-          <TouchableOpacity
-            style={[styles.btn, loading && styles.btnDisabled]}
-            onPress={submit}
-            disabled={loading || googleLoading}
-          >
-            {loading ? (
-              <ActivityIndicator color="#fff" />
-            ) : (
-              <Text style={styles.btnText}>ĐĂNG NHẬP</Text>
-            )}
-          </TouchableOpacity>
 
           <TouchableOpacity
             style={styles.switchBtn}
@@ -172,99 +174,4 @@ export default function LoginScreen() {
       </KeyboardAvoidingView>
     </SafeAreaView>
   );
-}
-
-/** @param {import('../constants/theme').AppColors} c */
-function createStyles(c) {
-  return StyleSheet.create({
-    safe: { flex: 1, backgroundColor: c.bg0 },
-    flex: { flex: 1 },
-    scroll: {
-      padding: 24,
-      paddingTop: 48,
-    },
-    title: {
-      fontSize: 26,
-      fontWeight: "700",
-      color: c.textPrimary,
-      letterSpacing: -0.5,
-    },
-    sub: {
-      marginTop: 8,
-      fontSize: 14,
-      color: c.silver,
-      opacity: 0.7,
-      lineHeight: 20,
-      marginBottom: 28,
-    },
-    warn: {
-      backgroundColor: "rgba(255,184,0,0.12)",
-      borderWidth: 1,
-      borderColor: "rgba(255,184,0,0.35)",
-      borderRadius: 12,
-      padding: 14,
-      marginBottom: 20,
-    },
-    warnText: { color: c.warning, fontSize: 13, lineHeight: 20 },
-    googleBtn: {
-      backgroundColor: c.bg3,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: 14,
-      padding: 16,
-      alignItems: "center",
-    },
-    googleBtnText: {
-      color: c.textPrimary,
-      fontSize: 14,
-      fontWeight: "600",
-    },
-    dividerRow: {
-      flexDirection: "row",
-      alignItems: "center",
-      gap: 12,
-      marginVertical: 22,
-    },
-    divider: { flex: 1, height: 1, backgroundColor: c.border },
-    dividerText: {
-      fontSize: 11,
-      color: c.silver,
-      opacity: 0.5,
-      textTransform: "uppercase",
-      letterSpacing: 1,
-    },
-    label: {
-      fontSize: 9,
-      color: c.silver,
-      opacity: 0.5,
-      letterSpacing: 2,
-      marginBottom: 8,
-    },
-    input: {
-      backgroundColor: c.bg3,
-      borderWidth: 1,
-      borderColor: c.border,
-      borderRadius: 12,
-      padding: 14,
-      color: c.textPrimary,
-      fontSize: 15,
-      marginBottom: 16,
-    },
-    btn: {
-      backgroundColor: c.electric,
-      borderRadius: 14,
-      padding: 16,
-      alignItems: "center",
-      marginTop: 8,
-    },
-    btnDisabled: { opacity: 0.7 },
-    btnText: {
-      color: "#fff",
-      fontSize: 13,
-      fontWeight: "700",
-      letterSpacing: 1.2,
-    },
-    switchBtn: { marginTop: 20, alignItems: "center" },
-    switchText: { color: c.accent, fontSize: 13 },
-  });
 }

@@ -30,6 +30,12 @@ const useStore = create((set, get) => ({
     set({ isDark: next, colors: next ? DARK : LIGHT });
   },
 
+  /** Đặt chế độ tối/sáng tường minh (vd. Switch: sáng = false). */
+  setThemeIsDark: (next) => {
+    const dark = Boolean(next);
+    set({ isDark: dark, colors: dark ? DARK : LIGHT });
+  },
+
   transactions: [],
   debts: [],
   categories: [],
