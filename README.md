@@ -1,59 +1,83 @@
-# 💰 Spending Tracker - Ứng Dụng Quản Lý Tài Chính Cá Nhân
+# Spending Tracker — quản lý thu chi cá nhân
 
-Chào mừng bạn đến với **Spending Tracker**! Đây là một ứng dụng quản lý tài chính cá nhân đơn giản, trực quan, giúp bạn dễ dàng theo dõi dòng tiền, kiểm soát ngân sách và quản lý các khoản vay nợ một cách hiệu quả.
-
----
-
-## ✨ Tính năng nổi bật
-
-- 📝 **Ghi chép nhanh chóng**: Dễ dàng thêm các khoản thu/chi hàng ngày chỉ với vài thao tác.
-- 📊 **Thống kê trực quan (Stats)**: Xem báo cáo tổng quan về tình hình tài chính của bạn qua các biểu đồ dễ hiểu.
-- 🎯 **Quản lý ngân sách (Budget)**: Đặt ra giới hạn chi tiêu cho từng danh mục để tránh việc "vung tay quá trán".
-- 🤝 **Theo dõi vay/nợ (Debt)**: Ghi nhớ các khoản tiền bạn cho mượn hoặc đang nợ người khác, giúp bạn quản lý dòng tiền tốt hơn.
-- 🌙 **Hỗ trợ Giao diện Tối/Sáng**: Tự động tùy chỉnh theo sở thích của bạn.
+Ứng dụng theo dõi dòng tiền, ngân sách và khoản vay/nợ, giao diện sáng/tối.
 
 ---
 
-## 📱 Nền tảng hỗ trợ
+## Tính năng
 
-⚠️ **Lưu ý quan trọng:** Hiện tại, ứng dụng **chỉ mới hỗ trợ hệ điều hành Android**. Phiên bản dành cho **iOS (iPhone/iPad)** vẫn đang trong quá trình nghiên cứu, phát triển và sẽ được ra mắt trong tương lai. 
-
----
-
-## 📥 Hướng dẫn cài đặt (Dành cho Android)
-
-Do ứng dụng hiện tại đang trong giai đoạn phát triển và chưa được đưa lên Google Play Store, bạn có thể cài đặt trực tiếp thông qua file `.apk` theo các bước sau:
-
-1. **Tải file APK**: Truy cập vào mục [Releases](../../releases) (hoặc chèn link tải Google Drive của bạn vào đây) và tải xuống file `SpendingTracker.apk` mới nhất.
-2. **Cho phép cài đặt ứng dụng không rõ nguồn gốc**: 
-   - Vào **Cài đặt (Settings)** > **Bảo mật (Security)** (hoặc Ứng dụng).
-   - Bật tùy chọn **Cài đặt ứng dụng không rõ nguồn gốc (Install unknown apps)** cho trình duyệt hoặc trình quản lý file của bạn.
-3. **Cài đặt**: Mở file `.apk` vừa tải về và chọn **Cài đặt (Install)**.
-4. **Mở ứng dụng**: Sau khi cài đặt xong, bạn có thể mở ứng dụng lên và bắt đầu quản lý tài chính của mình!
+- Ghi thu/chi nhanh, có danh mục và ghi chú
+- Thống kê theo thời gian
+- Ngân sách theo danh mục
+- Theo dõi vay/nợ
+- Giao diện sáng / tối
 
 ---
 
-## 🚀 Hướng dẫn sử dụng cơ bản
+## Nền tảng
 
-1. **Thêm giao dịch mới**: Nhấn vào nút **"+"** (hoặc tab Thêm mới) trên màn hình chính để nhập số tiền, chọn danh mục (Ăn uống, Đi lại, Lương...) và ghi chú.
-2. **Xem thống kê**: Chuyển sang tab **Thống kê** để xem biểu đồ chi tiêu trong tháng.
-3. **Thiết lập ngân sách**: Chuyển sang tab **Ngân sách** để tạo các hạn mức chi tiêu cho tháng này.
-4. **Ghi nhận khoản nợ**: Sử dụng tab **Vay/Nợ** để thêm thông tin người vay/cho vay và số tiền tương ứng.
+Hiện tập trung **Android**. iOS có thể bổ sung sau.
 
 ---
 
-## 📸 Ảnh chụp màn hình
+## Cài đặt bản APK (người dùng)
 
-| Màn hình chính | Thêm giao dịch | Thống kê | Quản lý vay/nợ |
-| :---: | :---: | :---: | :---: |
-| ![Home](assets/screenshots/IMG_0277.PNG) | ![Add](/assets/screenshots/IMG_0279.PNG) | ![Stats](/assets/screenshots/IMG_0278.PNG) | ![Debt](/assets/screenshots/IMG_0283.PNG) |
+1. Tải file **APK** mới nhất từ [Releases](https://github.com/longnhx1/spending-tracker/releases) (hoặc nguồn bạn phát hành).
+2. Trên điện thoại: bật cài đặt ứng dụng từ nguồn tương ứng (trình duyệt / quản lý file).
+3. Mở file APK và cài đặt.
 
 ---
 
-## 💬 Phản hồi và Góp ý
+## Chạy mã nguồn (lập trình viên)
 
-Ứng dụng vẫn đang trong quá trình hoàn thiện. Nếu bạn gặp bất kỳ lỗi nào (bug) hoặc có ý tưởng muốn đóng góp để ứng dụng tốt hơn, vui lòng:
-- Tạo một **Issue** mới trên kho lưu trữ (Repository) này.
-- Hoặc liên hệ trực tiếp với nhà phát triển qua email: *utena.lg1411@gmail.com*
+Yêu cầu: [Node.js](https://nodejs.org/) (khuyến nghị LTS), npm, và môi trường [Expo](https://docs.expo.dev/) / Android Studio nếu build native.
 
-Cảm ơn bạn đã tin tưởng và sử dụng Spending Tracker! ❤️
+```bash
+git clone https://github.com/longnhx1/spending-tracker.git
+cd spending-tracker
+npm install
+cp .env.example .env   # Windows: copy .env.example .env
+```
+
+Chỉnh file **`.env`**: điền `EXPO_PUBLIC_SUPABASE_URL` và `EXPO_PUBLIC_SUPABASE_ANON_KEY` (Supabase → Project Settings → API).
+
+```bash
+npx expo start
+```
+
+---
+
+## Git & bảo mật — không commit những thứ sau
+
+| Loại | Ghi chú |
+|------|--------|
+| `.env`, `.env.local`, mọi file `.env.*` (trừ `.env.example`) | Chứa khóa Supabase / cấu hình riêng |
+| `google-services.json`, `GoogleService-Info.plist` | Firebase (nếu sau này có) |
+| `keystore.properties`, `release.keystore`, `upload-keystore.jks`, `*.pepk` | Ký bản phát hành Play Store |
+| `credentials.json` (EAS) | Token / bí mật build Expo |
+| `assets/screenshots/` | Ảnh màn hình có thể chứa số tiền / dữ liệu cá nhân; giữ cục bộ hoặc đưa lên Releases nếu cần |
+
+File **`.env.example`** chỉ có tên biến, **không** có giá trị thật — có thể push an toàn.
+
+Sau khi cài lại Windows hoặc chuyển máy: `git pull` / clone lại, `npm install`, tạo lại `.env` (sao lưu secret riêng, ví dụ password manager).
+
+---
+
+## Sử dụng nhanh trong app
+
+1. **Thêm giao dịch**: tab **+** — số tiền, danh mục, ghi chú.
+2. **Thống kê**: tab tương ứng để xem tổng hợp.
+3. **Ngân sách**: đặt hạn mức theo danh mục.
+4. **Vay/nợ**: ghi các khoản cho vay hoặc đang nợ.
+
+---
+
+## Ảnh màn hình
+
+Ảnh demo không lưu trong repo (tránh lộ dữ liệu). Có thể đính kèm trong **Releases** hoặc giữ trong thư mục cục bộ `assets/screenshots/` (thư mục này đã được `.gitignore`).
+
+---
+
+## Phản hồi
+
+Bug hoặc góp ý: mở **Issue** trên repository hoặc liên hệ: *utena.lg1411@gmail.com*
