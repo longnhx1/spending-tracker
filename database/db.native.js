@@ -1,11 +1,11 @@
-// database/db.js
-import * as SQLite from 'expo-sqlite';
+// database/db.native.js — SQLite on iOS / Android
+import * as SQLite from "expo-sqlite";
 
 let db = null;
 
 export const getDb = async () => {
   if (!db) {
-    db = await SQLite.openDatabaseAsync('spending.db');
+    db = await SQLite.openDatabaseAsync("spending.db");
   }
   return db;
 };
@@ -38,15 +38,15 @@ export const initDatabase = async () => {
 export const addTransaction = async (amount, type, category, note, date) => {
   const database = await getDb();
   return await database.runAsync(
-    'INSERT INTO transactions (amount, type, category, note, date) VALUES (?, ?, ?, ?, ?)',
-    [amount, type, category, note, date]
+    "INSERT INTO transactions (amount, type, category, note, date) VALUES (?, ?, ?, ?, ?)",
+    [amount, type, category, note, date],
   );
 };
 
 export const getTransactions = async () => {
   const database = await getDb();
   return await database.getAllAsync(
-    'SELECT * FROM transactions ORDER BY date DESC, created_at DESC'
+    "SELECT * FROM transactions ORDER BY date DESC, created_at DESC",
   );
 };
 
@@ -54,29 +54,39 @@ export const getTransactionsByMonth = async (monthStr) => {
   const database = await getDb();
   return await database.getAllAsync(
     "SELECT * FROM transactions WHERE strftime('%Y-%m', date) = ? ORDER BY date DESC",
-    [monthStr]
+    [monthStr],
   );
 };
 
 export const getDebts = async () => {
   const database = await getDb();
   return await database.getAllAsync(
-    'SELECT * FROM debts ORDER BY created_at DESC'
+    "SELECT * FROM debts ORDER BY created_at DESC",
   );
 };
 
 export const addDebt = async (name, totalAmount, dueDate) => {
   const database = await getDb();
   return await database.runAsync(
-    'INSERT INTO debts (name, total_amount, remaining_amount, due_date) VALUES (?, ?, ?, ?)',
-    [name, totalAmount, totalAmount, dueDate]
+    "INSERT INTO debts (name, total_amount, remaining_amount, due_date) VALUES (?, ?, ?, ?)",
+    [name, totalAmount, totalAmount, dueDate],
   );
 };
 
 export const updateDebtRemaining = async (id, remainingAmount) => {
   const database = await getDb();
   return await database.runAsync(
-    'UPDATE debts SET remaining_amount = ? WHERE id = ?',
-    [remainingAmount, id]
+    "UPDATE debts SET remaining_amount = ? WHERE id = ?",
+    [remainingAmount, id],
   );
+};
+
+/** All budget rows for one-time cloud migration (table may not exist yet). */
+export const getLocalBudgetsAll = async () => {
+  try {
+    const database = await getDb();
+    return (await database.getAllAsync("SELECT * FROM budgets")) ?? [];
+  } catch {
+    return [];
+  }
 };

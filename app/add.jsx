@@ -1,7 +1,7 @@
 // app/add.jsx
 // Màn hình thêm giao dịch mới cho ứng dụng theo dõi chi tiêu
 import { useRouter } from "expo-router";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   ActivityIndicator,
   Alert,
@@ -13,14 +13,15 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CATEGORIES, COLORS } from "../constants/theme";
+import { CATEGORIES } from "../constants/theme";
+import { useAppColors } from "../context/AppThemeContext";
 import useStore from "../store/useStore";
 
-// API Key cho Gemini AI - cần thay thế bằng key thật
-const GEMINI_API_KEY = "AIzaSyCveq_XEaDGhYyHc0Gj9yn1TFbystsUMCs";
+const GEMINI_API_KEY = process.env.EXPO_PUBLIC_GEMINI_API_KEY ?? "";
 
 // Hàm gọi Gemini AI để tự động phân loại giao dịch dựa trên ghi chú
 const classifyWithAI = async (note) => {
+  if (!GEMINI_API_KEY) return null;
   try {
     // Lấy danh sách ID các danh mục để gửi cho AI
     const categoryIds = CATEGORIES.map((c) => c.id).join(", ");
@@ -53,7 +54,7 @@ Chỉ trả về JSON, không giải thích: {"category": "tên_danh_mục"}`,
     // Parse JSON để lấy category
     const parsed = JSON.parse(clean);
     return parsed.category;
-  } catch (e) {
+  } catch (_e) {
     // Nếu có lỗi, trả về null
     return null;
   }
@@ -61,6 +62,8 @@ Chỉ trả về JSON, không giải thích: {"category": "tên_danh_mục"}`,
 
 export default function AddScreen() {
   const router = useRouter();
+  const colors = useAppColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const addTransaction = useStore((state) => state.addTransaction);
 
   const [type, setType] = useState("expense"); // 'expense' | 'income'
@@ -91,7 +94,7 @@ export default function AddScreen() {
     return parseInt(raw).toLocaleString("vi-VN");
   };
 
-  const handleSave = () => {
+  const handleSave = async () => {
     if (!amount || parseInt(amount) <= 0) {
       Alert.alert("Lỗi", "Vui lòng nhập số tiền hợp lệ");
       return;
@@ -101,9 +104,12 @@ export default function AddScreen() {
       return;
     }
 
-    addTransaction(parseInt(amount), type, category, note, date);
-
-    router.back();
+    try {
+      await addTransaction(parseInt(amount), type, category, note, date);
+      router.back();
+    } catch (e) {
+      Alert.alert("Lỗi", e.message ?? "Không lưu được giao dịch.");
+    }
   };
 
   return (
@@ -123,26 +129,34 @@ export default function AddScreen() {
         {/* Toggle chọn loại giao dịch: Chi tiêu hoặc Thu nhập */}
         <View style={styles.toggle}>
           <TouchableOpacity
-            style={[styles.togBtn, type === "expense" && styles.togBtnExpense]}
+            style={[
+              styles.togBtn,
+              type === "expense" && {
+                backgroundColor: colors.toggleExpenseBg,
+              },
+            ]}
             onPress={() => setType("expense")}
           >
             <Text
               style={[
                 styles.togText,
-                type === "expense" && { color: COLORS.danger },
+                type === "expense" && { color: colors.danger },
               ]}
             >
               Chi tiêu
             </Text>
           </TouchableOpacity>
           <TouchableOpacity
-            style={[styles.togBtn, type === "income" && styles.togBtnIncome]}
+            style={[
+              styles.togBtn,
+              type === "income" && { backgroundColor: colors.toggleIncomeBg },
+            ]}
             onPress={() => setType("income")}
           >
             <Text
               style={[
                 styles.togText,
-                type === "income" && { color: COLORS.success },
+                type === "income" && { color: colors.success },
               ]}
             >
               Thu nhập
@@ -157,14 +171,14 @@ export default function AddScreen() {
             style={[
               styles.amountInput,
               {
-                color: type === "expense" ? COLORS.danger : COLORS.success,
+                color: type === "expense" ? colors.danger : colors.success,
               },
             ]}
             value={formatDisplay(amount)}
             onChangeText={handleAmountChange}
             keyboardType="numeric"
             placeholder="0"
-            placeholderTextColor={COLORS.textMuted}
+            placeholderTextColor={colors.textMuted}
           />
         </View>
 
@@ -178,13 +192,13 @@ export default function AddScreen() {
               onChangeText={setNote}
               onBlur={handleNoteBlur}
               placeholder="Nhập ghi chú để AI tự phân loại..."
-              placeholderTextColor={COLORS.textMuted}
+              placeholderTextColor={colors.textMuted}
             />
             {/* Hiển thị loading khi AI đang phân loại */}
             {isClassifying && (
               <ActivityIndicator
                 size="small"
-                color={COLORS.accent}
+                color={colors.accent}
                 style={{ marginLeft: 10 }}
               />
             )}
@@ -204,10 +218,13 @@ export default function AddScreen() {
                 key={cat.id}
                 style={[
                   styles.catItem,
-                  category === cat.id && styles.catItemSelected,
                   category === cat.id && {
+                    backgroundColor:
+                      type === "expense"
+                        ? colors.catItemSelectedExpense
+                        : colors.catItemSelectedIncome,
                     borderColor:
-                      type === "expense" ? COLORS.danger : COLORS.success,
+                      type === "expense" ? colors.danger : colors.success,
                   },
                 ]}
                 onPress={() => setCategory(cat.id)}
@@ -218,7 +235,7 @@ export default function AddScreen() {
                     styles.catName,
                     category === cat.id && {
                       color:
-                        type === "expense" ? COLORS.danger : COLORS.success,
+                        type === "expense" ? colors.danger : colors.success,
                     },
                   ]}
                 >
@@ -240,141 +257,130 @@ export default function AddScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  // Container chính với background
-  safe: { flex: 1, backgroundColor: COLORS.bg0 },
-  // Header với nút back và tiêu đề
-  header: {
-    flexDirection: "row",
-    alignItems: "center",
-    gap: 12,
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  // Nút back
-  backBtn: {
-    width: 32,
-    height: 32,
-    borderRadius: 10,
-    backgroundColor: COLORS.bg3,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    alignItems: "center",
-    justifyContent: "center",
-  },
-  backText: { color: COLORS.silver, fontSize: 16 },
-  title: { fontSize: 18, color: COLORS.textPrimary, fontWeight: "700" },
-  // Toggle chọn loại giao dịch
-  toggle: {
-    flexDirection: "row",
-    margin: 20,
-    backgroundColor: COLORS.bg3,
-    borderRadius: 14,
-    padding: 4,
-    gap: 4,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-  },
-  togBtn: {
-    flex: 1,
-    padding: 10,
-    borderRadius: 10,
-    alignItems: "center",
-  },
-  togBtnExpense: { backgroundColor: "rgba(255,77,109,0.15)" },
-  togBtnIncome: { backgroundColor: "rgba(0,229,160,0.1)" },
-  togText: {
-    fontSize: 12,
-    fontWeight: "600",
-    color: COLORS.silver,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-  // Container nhập số tiền
-  amountBox: {
-    alignItems: "center",
-    paddingVertical: 16,
-    paddingHorizontal: 20,
-  },
-  amountCur: {
-    fontSize: 11,
-    color: COLORS.silver,
-    opacity: 0.4,
-    letterSpacing: 2,
-  },
-  amountInput: {
-    fontSize: 48,
-    fontWeight: "300",
-    letterSpacing: -2,
-    textAlign: "center",
-    minWidth: 100,
-  },
-  // Style chung cho các field
-  field: { paddingHorizontal: 20, marginBottom: 16 },
-  fieldLabel: {
-    fontSize: 9,
-    color: COLORS.silver,
-    opacity: 0.4,
-    letterSpacing: 2,
-    textTransform: "uppercase",
-    marginBottom: 8,
-  },
-  fieldRow: { flexDirection: "row", alignItems: "center" },
-  fieldInput: {
-    backgroundColor: COLORS.bg3,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 12,
-    color: COLORS.textPrimary,
-    fontSize: 14,
-  },
-  aiHint: {
-    fontSize: 10,
-    color: COLORS.accent,
-    marginTop: 6,
-    opacity: 0.7,
-  },
-  // Grid hiển thị danh mục
-  catGrid: {
-    flexDirection: "row",
-    flexWrap: "wrap",
-    gap: 8,
-  },
-  // Item danh mục
-  catItem: {
-    width: "22%",
-    backgroundColor: COLORS.bg3,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    padding: 10,
-    alignItems: "center",
-    gap: 4,
-  },
-  catItemSelected: {
-    backgroundColor: "rgba(255,77,109,0.08)",
-  },
-  catEmoji: { fontSize: 20 },
-  catName: {
-    fontSize: 9,
-    color: COLORS.silver,
-    opacity: 0.5,
-    textAlign: "center",
-  },
-  // Nút lưu giao dịch
-  saveBtn: {
-    margin: 20,
-    backgroundColor: COLORS.electric,
-    borderRadius: 14,
-    padding: 16,
-    alignItems: "center",
-  },
-  saveBtnText: {
-    color: "#fff",
-    fontSize: 13,
-    fontWeight: "700",
-    letterSpacing: 1.5,
-  },
-});
+/** @param {import('../constants/theme').AppColors} c */
+function createStyles(c) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg0 },
+    header: {
+      flexDirection: "row",
+      alignItems: "center",
+      gap: 12,
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      paddingBottom: 8,
+    },
+    backBtn: {
+      width: 32,
+      height: 32,
+      borderRadius: 10,
+      backgroundColor: c.bg3,
+      borderWidth: 1,
+      borderColor: c.border,
+      alignItems: "center",
+      justifyContent: "center",
+    },
+    backText: { color: c.silver, fontSize: 16 },
+    title: { fontSize: 18, color: c.textPrimary, fontWeight: "700" },
+    toggle: {
+      flexDirection: "row",
+      margin: 20,
+      backgroundColor: c.bg3,
+      borderRadius: 14,
+      padding: 4,
+      gap: 4,
+      borderWidth: 1,
+      borderColor: c.border,
+    },
+    togBtn: {
+      flex: 1,
+      padding: 10,
+      borderRadius: 10,
+      alignItems: "center",
+    },
+    togText: {
+      fontSize: 12,
+      fontWeight: "600",
+      color: c.silver,
+      letterSpacing: 1,
+      textTransform: "uppercase",
+    },
+    amountBox: {
+      alignItems: "center",
+      paddingVertical: 16,
+      paddingHorizontal: 20,
+    },
+    amountCur: {
+      fontSize: 11,
+      color: c.silver,
+      opacity: 0.4,
+      letterSpacing: 2,
+    },
+    amountInput: {
+      fontSize: 48,
+      fontWeight: "300",
+      letterSpacing: -2,
+      textAlign: "center",
+      minWidth: 100,
+    },
+    field: { paddingHorizontal: 20, marginBottom: 16 },
+    fieldLabel: {
+      fontSize: 9,
+      color: c.silver,
+      opacity: 0.4,
+      letterSpacing: 2,
+      textTransform: "uppercase",
+      marginBottom: 8,
+    },
+    fieldRow: { flexDirection: "row", alignItems: "center" },
+    fieldInput: {
+      backgroundColor: c.bg3,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      padding: 12,
+      color: c.textPrimary,
+      fontSize: 14,
+    },
+    aiHint: {
+      fontSize: 10,
+      color: c.accent,
+      marginTop: 6,
+      opacity: 0.7,
+    },
+    catGrid: {
+      flexDirection: "row",
+      flexWrap: "wrap",
+      gap: 8,
+    },
+    catItem: {
+      width: "22%",
+      backgroundColor: c.bg3,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      padding: 10,
+      alignItems: "center",
+      gap: 4,
+    },
+    catEmoji: { fontSize: 20 },
+    catName: {
+      fontSize: 9,
+      color: c.silver,
+      opacity: 0.5,
+      textAlign: "center",
+    },
+    saveBtn: {
+      margin: 20,
+      backgroundColor: c.electric,
+      borderRadius: 14,
+      padding: 16,
+      alignItems: "center",
+    },
+    saveBtnText: {
+      color: "#fff",
+      fontSize: 13,
+      fontWeight: "700",
+      letterSpacing: 1.5,
+    },
+  });
+}

@@ -1,7 +1,7 @@
-import * as FileSystem from "expo-file-system";
+import * as FileSystem from "expo-file-system/legacy";
 import { useRouter } from "expo-router";
 import * as Sharing from "expo-sharing";
-import { useState } from "react";
+import { useMemo, useState } from "react";
 import {
   Alert,
   ScrollView,
@@ -11,11 +11,14 @@ import {
   View,
 } from "react-native";
 import { SafeAreaView } from "react-native-safe-area-context";
-import { CATEGORIES, COLORS } from "../constants/theme";
+import { CATEGORIES } from "../constants/theme";
+import { useAppColors } from "../context/AppThemeContext";
 import useStore from "../store/useStore";
 
 export default function StatsScreen() {
   const router = useRouter();
+  const colors = useAppColors();
+  const styles = useMemo(() => createStyles(colors), [colors]);
   const transactions = useStore((state) => state.transactions || []);
   const currentMonth = new Date().toISOString().slice(0, 7);
   const monthTx = transactions.filter((tx) =>
@@ -200,105 +203,108 @@ export default function StatsScreen() {
   );
 }
 
-const styles = StyleSheet.create({
-  safe: { flex: 1, backgroundColor: COLORS.bg0 },
-  header: {
-    paddingHorizontal: 20,
-    paddingTop: 16,
-    paddingBottom: 8,
-  },
-  title: { fontSize: 24, color: COLORS.textPrimary, fontWeight: "800" },
-  subtitle: { fontSize: 11, color: COLORS.silver, opacity: 0.5, marginTop: 2 },
-  container: {
-    alignItems: "center",
-    padding: 20,
-  },
-  text: { color: COLORS.textPrimary, fontSize: 14, opacity: 0.7 },
-  value: {
-    fontSize: 28,
-    color: COLORS.accent,
-    fontWeight: "700",
-    marginTop: 6,
-  },
-  actionBar: {
-    flexDirection: "row",
-    gap: 8,
-    paddingHorizontal: 16,
-    paddingVertical: 10,
-    backgroundColor: COLORS.bg0,
-    borderTopWidth: 1,
-    borderTopColor: "#141C26",
-  },
-  actionPill: {
-    flex: 1,
-    backgroundColor: COLORS.bg3,
-    borderWidth: 1,
-    borderColor: COLORS.border,
-    borderRadius: 12,
-    paddingVertical: 8,
-    alignItems: "center",
-    gap: 4,
-  },
-  actionPillActive: {
-    borderColor: COLORS.accent,
-    backgroundColor: "rgba(0,168,255,0.08)",
-  },
-  actionPillIco: { fontSize: 16 },
-  actionPillTxt: {
-    fontSize: 8,
-    color: COLORS.silver,
-    opacity: 0.5,
-    letterSpacing: 0.5,
-    textTransform: "uppercase",
-  },
-  actionPillTxtActive: {
-    color: COLORS.accent,
-    opacity: 1,
-  },
-  bottomNav: {
-    position: "absolute",
-    bottom: 0,
-    left: 0,
-    right: 0,
-    flexDirection: "row",
-    justifyContent: "space-around",
-    paddingTop: 10,
-    paddingBottom: 28,
-    paddingHorizontal: 8,
-    backgroundColor: "#0A0E13",
-    borderTopWidth: 1,
-    borderTopColor: "#141C26",
-  },
-  navItem: {
-    alignItems: "center",
-    gap: 3,
-  },
-  navIcon: {
-    fontSize: 20,
-    opacity: 0.3,
-  },
-  navIconActive: {
-    opacity: 1,
-  },
-  navDot: {
-    width: 4,
-    height: 4,
-    borderRadius: 2,
-    backgroundColor: COLORS.accent,
-    opacity: 0,
-  },
-  navDotActive: {
-    opacity: 1,
-  },
-  navLabel: {
-    fontSize: 8,
-    color: COLORS.silver,
-    opacity: 0.3,
-    letterSpacing: 1,
-    textTransform: "uppercase",
-  },
-  navLabelActive: {
-    color: COLORS.accent,
-    opacity: 1,
-  },
-});
+/** @param {import('../constants/theme').AppColors} c */
+function createStyles(c) {
+  return StyleSheet.create({
+    safe: { flex: 1, backgroundColor: c.bg0 },
+    header: {
+      paddingHorizontal: 20,
+      paddingTop: 16,
+      paddingBottom: 8,
+    },
+    title: { fontSize: 24, color: c.textPrimary, fontWeight: "800" },
+    subtitle: { fontSize: 11, color: c.silver, opacity: 0.5, marginTop: 2 },
+    container: {
+      alignItems: "center",
+      padding: 20,
+    },
+    text: { color: c.textPrimary, fontSize: 14, opacity: 0.7 },
+    value: {
+      fontSize: 28,
+      color: c.accent,
+      fontWeight: "700",
+      marginTop: 6,
+    },
+    actionBar: {
+      flexDirection: "row",
+      gap: 8,
+      paddingHorizontal: 16,
+      paddingVertical: 10,
+      backgroundColor: c.bg0,
+      borderTopWidth: 1,
+      borderTopColor: c.navBarBorder,
+    },
+    actionPill: {
+      flex: 1,
+      backgroundColor: c.bg3,
+      borderWidth: 1,
+      borderColor: c.border,
+      borderRadius: 12,
+      paddingVertical: 8,
+      alignItems: "center",
+      gap: 4,
+    },
+    actionPillActive: {
+      borderColor: c.accent,
+      backgroundColor: c.actionPillActiveBg,
+    },
+    actionPillIco: { fontSize: 16 },
+    actionPillTxt: {
+      fontSize: 8,
+      color: c.silver,
+      opacity: 0.5,
+      letterSpacing: 0.5,
+      textTransform: "uppercase",
+    },
+    actionPillTxtActive: {
+      color: c.accent,
+      opacity: 1,
+    },
+    bottomNav: {
+      position: "absolute",
+      bottom: 0,
+      left: 0,
+      right: 0,
+      flexDirection: "row",
+      justifyContent: "space-around",
+      paddingTop: 10,
+      paddingBottom: 28,
+      paddingHorizontal: 8,
+      backgroundColor: c.navBarBg,
+      borderTopWidth: 1,
+      borderTopColor: c.navBarBorder,
+    },
+    navItem: {
+      alignItems: "center",
+      gap: 3,
+    },
+    navIcon: {
+      fontSize: 20,
+      opacity: 0.3,
+    },
+    navIconActive: {
+      opacity: 1,
+    },
+    navDot: {
+      width: 4,
+      height: 4,
+      borderRadius: 2,
+      backgroundColor: c.accent,
+      opacity: 0,
+    },
+    navDotActive: {
+      opacity: 1,
+    },
+    navLabel: {
+      fontSize: 8,
+      color: c.silver,
+      opacity: 0.3,
+      letterSpacing: 1,
+      textTransform: "uppercase",
+    },
+    navLabelActive: {
+      color: c.accent,
+      opacity: 1,
+    },
+  });
+}
